@@ -1,0 +1,222 @@
+/* Font -------------------------------------------------------------------- */
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+body, input, button, textarea, select {
+    font: 16px 'Roboto', sans-serif;
+}
+
+/* Layout ------------------------------------------------------------------ */
+
+body {
+    margin: 0;
+    height: 100vh;
+    display: grid;
+    grid: auto auto 1fr auto / auto;
+}
+
+header, footer {
+    padding: 10px 50px;
+    background: #ccc;
+}
+
+header { /* NEW */
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+header h1 {
+    flex: 1; /* NEW */
+    margin: 0;
+    padding-left: 40px;
+    background: url(/images/favicon.png) no-repeat left / 36px;
+}
+
+header a {
+    color: inherit;
+    text-decoration: none;
+}
+
+header div { /* NEW */
+    text-align: right;
+}
+
+header img { /* NEW */
+    width: 36px;
+    height: 36px;
+    border: 1px solid #333;
+    border-radius: 5px;
+}
+
+nav {
+    padding: 0 50px;
+    background: #999;
+    display: flex;
+}
+
+nav a {
+    padding: 5px 10px;
+    color: #fff;
+    background: #666;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+nav a:hover {
+    background: #333;
+}
+
+nav div { /* NEW */
+    flex: 1;
+}
+
+main {
+    padding: 20px 50px;
+}
+
+main h1 {
+    margin-top: 0;
+}
+
+/* Pager */
+nav.pager {
+    padding: 0;
+    background: transparent;
+}
+
+nav.pager a {
+    outline: 1px solid #333;
+}
+
+nav.pager a.active {
+    background: #333;
+}
+
+/* Table ------------------------------------------------------------------- */
+
+.table {
+    border-collapse: collapse;
+}
+
+.table th, .table td {
+    border: 1px solid #333;
+    padding: 5px;
+}
+
+.table th {
+    color: #fff;
+    background: #666;
+}
+
+.table tr:hover td {
+    background: #ccc;
+}
+
+.table td:has(.popup) {
+    position: relative;
+}
+
+.table .popup {
+    position: absolute;
+    top: 50%;
+    left: 100%;
+    translate: 5px -50%;
+    z-index: 1;
+    border: 1px solid #333;
+    display: none;
+}
+
+.table tr:hover .popup {
+    display: block;
+}
+
+.detail th {
+    text-align: left;
+}
+
+.right {
+    text-align: right;
+}
+
+/* Sorting */
+.table th a {
+    color: inherit;
+    display: block;
+}
+
+.table th a.asc::after {
+    content: ' ▴';
+}
+
+.table th a.desc::after {
+    content: ' ▾';
+}
+
+/* Flash Message ----------------------------------------------------------- */
+
+#info {
+    position: fixed;
+    color: #fff;
+    background: #666;
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 10px 20px;
+    left: 50%;
+    translate: -50% 0;
+    z-index: 999;
+
+    top: -100px;
+    opacity: 0;
+}
+
+#info:not(:empty) {
+    animation: fade 5s;
+}
+
+@keyframes fade {
+      0% { top: -100px; opacity: 0; }
+     10% { top:  100px; opacity: 1; }
+     90% { top:  100px; opacity: 1; }
+    100% { top: -100px; opacity: 0; }
+}
+
+/* Form -------------------------------------------------------------------- */
+
+label > * {
+    vertical-align: text-top;
+}
+
+.form {
+    display: grid;
+    grid: auto / auto auto auto;
+    gap: 5px;
+    place-content: start;
+    place-items: center start;
+}
+
+.form > label:not(:has(*)) {
+    place-self: stretch;
+    background: #ccc;
+    font-weight: bold;
+    padding: 5px;
+}
+
+.form > section {
+    grid-column: 1 / -1;
+}
+
+.err {
+    color: red;
+}
+
+/* Photo Upload ------------------------------------------------------------ */
+
+label.upload img {
+    display: block;
+    border: 1px solid #333;
+    width: 200px;
+    height: 200px;
+    object-fit: cover;
+    cursor: pointer;
+}
