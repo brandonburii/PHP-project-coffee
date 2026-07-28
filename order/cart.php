@@ -70,14 +70,21 @@ include '../_head.php';
             $p = $stm->fetch();
             if (!$p) continue;
 
-            $subtotal = $p->price * $unit;
+            $subtotal = product_price($p) * $unit;
             $count += $unit;
             $total += $subtotal; 
     ?>
         <tr>
             <td><?= $p->id ?></td>
             <td><?= $p->name ?></td>
-            <td class="right"><?= $p->price ?></td>
+            <td class="right">
+                <?php if (is_on_sale($p)): ?>
+                    <span style="text-decoration:line-through; color:var(--muted); font-size:.85rem;"><?= sprintf('%.2f', $p->price) ?></span>
+                    <?= sprintf('%.2f', product_price($p)) ?>
+                <?php else: ?>
+                    <?= sprintf('%.2f', $p->price) ?>
+                <?php endif ?>
+            </td>
             <td>
                 <form method="post">
                     <?= html_hidden('id', "id='id_$p->id'") ?>
@@ -106,7 +113,7 @@ include '../_head.php';
     <button class="danger" data-post="?btn=clear" data-confirm="Clear your cart?&#10;This action cannot be undone.">Clear Cart</button>
 
     <?php if ($_user?->role == 'Member'): ?>
-        <button class="success" data-post="checkout.php" data-confirm="Proceed to checkout?&#10;Your order will be placed and stock updated.">Checkout</button>
+        <button class="success" data-get="checkout.php">Checkout</button>
     <?php else: ?>
         Please <a href="/login.php">login</a> as member to checkout
     <?php endif ?>

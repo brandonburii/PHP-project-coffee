@@ -67,9 +67,30 @@ include '../_head.php';
     <div><?= $o->count ?></div>
     <br>
 
-    <label>Total</label>
-    <div>RM <?= $o->total ?></div>
+    <label>Subtotal</label>
+    <div>RM <?= sprintf('%.2f', ($o->subtotal ?? 0) > 0 ? $o->subtotal : $o->total) ?></div>
     <br>
+
+    <label>Discount</label>
+    <div>&minus; RM <?= sprintf('%.2f', $o->discount ?? 0) ?>
+        <?php if (!empty($o->voucher_code)): ?>
+            <span class="badge-status neutral">Voucher: <?= encode($o->voucher_code) ?></span>
+        <?php endif ?>
+        <?php if (!empty($o->points_used)): ?>
+            <span class="badge-status neutral"><?= $o->points_used ?> points used</span>
+        <?php endif ?>
+    </div>
+    <br>
+
+    <label>Total</label>
+    <div><b>RM <?= sprintf('%.2f', $o->total) ?></b></div>
+    <br>
+
+    <?php if (!empty($o->points_earned)): ?>
+        <label>Points Earned</label>
+        <div><span class="badge-status success">+<?= $o->points_earned ?> points</span></div>
+        <br>
+    <?php endif ?>
 </form>
 
 <p><?= count($arr) ?> item(s)</p>

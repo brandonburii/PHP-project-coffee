@@ -60,6 +60,7 @@ include '_head.php';
     <section>
         <button>Login</button>
         <button type="reset">Reset</button>
+        <button type="button" class="secondary" data-get="/user/reset.php">Forgot Password?</button>
     </section>
 </form>
 

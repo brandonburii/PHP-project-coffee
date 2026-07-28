@@ -32,14 +32,16 @@ $(() => {
     // Initiate GET request
     $('[data-get]').on('click', e => {
         e.preventDefault();
-        const url = e.target.dataset.get;
+        const el = e.currentTarget;
+        const url = el.dataset.get;
         location = url || location;
     });
 
     // Initiate POST request
     $('[data-post]').on('click', e => {
         e.preventDefault();
-        const url = e.target.dataset.post;
+        const el = e.currentTarget;
+        const url = el.dataset.post;
         const f = $('<form>').appendTo(document.body)[0];
         f.method = 'POST';
         f.action = url || location;

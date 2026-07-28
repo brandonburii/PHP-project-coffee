@@ -4,6 +4,19 @@ include '../_base.php';
 // ----------------------------------------------------------------------------
 
 if (is_post()) {
+    $btn = req('btn');
+
+    // Toggle compare selection
+    if ($btn == 'compare') {
+        $id = req('id');
+        if ($id != '' && is_exists($id, 'product', 'id')) {
+            if (!toggle_compare($id)) {
+                temp('info', 'You can compare up to 3 products only');
+            }
+        }
+        redirect();
+    }
+
     $id   = req('id');
     $unit = req('unit');
     audit('Cart', 'Added product to cart', "Added product ID $id with quantity $unit from product list page");
@@ -12,6 +25,7 @@ if (is_post()) {
 }
 
 $arr = $_db->query('SELECT * FROM product');
+$compare = get_compare();
 
 // ----------------------------------------------------------------------------
 
@@ -23,6 +37,16 @@ $_title = 'Product | List';
 include '../_head.php';
 ?>
 
+<?php if ($compare): ?>
+<div class="card" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+    <div>
+        <b><?= count($compare) ?></b> product(s) selected for comparison
+        <span style="color:var(--muted); font-size:.85rem;">(max 3)</span>
+    </div>
+    <button data-get="compare.php">Compare Now</button>
+</div>
+<?php endif ?>
+
 <div id="products">
     <?php foreach ($arr as $p): ?>
         <?php
@@ -31,6 +55,9 @@ include '../_head.php';
         $unit     = $cart[$p->id] ?? 0;
         $max_unit = min($p->stock, 10);
         $in_stock = $max_unit >= 1;
+        $on_sale  = is_on_sale($p);
+        $price    = product_price($p);
+        $in_compare = in_array($p->id, $compare);
         ?>
         <div class="product">
             <div class="thumb">
@@ -40,6 +67,12 @@ include '../_head.php';
                 <?php if ($unit): ?>
                     <span class="badge in-cart"><?= $unit ?> in cart</span>
                 <?php endif ?>
+                <?php if (!empty($p->tag)): ?>
+                    <span class="badge" style="top:auto; bottom:10px; left:10px; background:var(--coffee);"><?= encode($p->tag) ?></span>
+                <?php endif ?>
+                <?php if ($on_sale): ?>
+                    <span class="badge" style="top:10px; left:auto; right:10px; background:var(--red);">SALE</span>
+                <?php endif ?>
                 <img src="/photos/<?= $p->photo ?>"
                      alt="<?= encode($p->name) ?>"
                      data-get="/product/detail.php?id=<?= $p->id ?>">
@@ -47,10 +80,20 @@ include '../_head.php';
 
             <div class="info">
                 <div class="name"><?= encode($p->name) ?></div>
+                <?php if (!empty($p->origin) || !empty($p->roast)): ?>
+                    <div class="avail" style="color:var(--muted);">
+                        <?= encode(trim(($p->origin ?? '') . (!empty($p->origin) && !empty($p->roast) ? ' · ' : '') . ($p->roast ?? ''))) ?>
+                    </div>
+                <?php endif ?>
                 <div class="avail <?= $in_stock ? '' : 'out' ?>">
                     <?= $in_stock ? $p->stock . ' in stock' : 'Out of stock' ?>
                 </div>
-                <div class="price">RM <?= sprintf('%.2f', $p->price) ?></div>
+                <div class="price">
+                    <?php if ($on_sale): ?>
+                        <span style="text-decoration:line-through; color:var(--muted); font-size:.9rem; font-weight:500; margin-right:6px;">RM <?= sprintf('%.2f', $p->price) ?></span>
+                    <?php endif ?>
+                    RM <?= sprintf('%.2f', $price) ?>
+                </div>
 
                 <?php if ($in_stock): ?>
                     <form method="post" class="actions">
@@ -66,6 +109,14 @@ include '../_head.php';
                         <button type="button" disabled style="opacity:.6;cursor:not-allowed;width:100%;">Sold Out</button>
                     </div>
                 <?php endif ?>
+
+                <form method="post" style="margin-top:6px;">
+                    <input type="hidden" name="btn" value="compare">
+                    <input type="hidden" name="id" value="<?= encode($p->id) ?>">
+                    <button type="submit" class="secondary" style="width:100%; font-size:.8rem;">
+                        <?= $in_compare ? '✓ In Compare' : '+ Compare' ?>
+                    </button>
+                </form>
             </div>
         </div>
     <?php endforeach ?>
