@@ -36,7 +36,6 @@
                 <a href="/admin/reward_list.php" class="<?= is_active('/admin/reward_list.php') ?>"><?= icon('rewards') ?><span>Reward Maintenance</span></a>
                 <a href="/order/history.php" class="<?= is_active('/order/history.php') ?>"><?= icon('orders') ?><span>Order Management</span></a>
                 <a href="/admin/reports.php" class="<?= is_active('/admin/reports.php') ?>"><?= icon('reports') ?><span>Sales Reports</span></a>
-                <a href="/admin/audit_log.php" class="<?= is_active('/admin/audit_log.php') ?>"><?= icon('audit') ?><span>Audit Log</span></a>
                 <a href="/user/profile.php" class="<?= is_active('/user/profile.php') ?>"><?= icon('profile') ?><span>Profile</span></a>
                 <a href="/logout.php"><?= icon('logout') ?><span>Logout</span></a>
             <?php elseif ($_user?->role == 'Member'): ?>

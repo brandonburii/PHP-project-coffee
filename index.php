@@ -88,13 +88,6 @@ if ($_user) {
             ORDER BY o.id DESC 
             LIMIT 5
         ")->fetchAll();
-
-        // Recent Audit Logs
-        $recent_logs = $_db->query("
-            SELECT * FROM audit_log 
-            ORDER BY id DESC 
-            LIMIT 5
-        ")->fetchAll();
     } else {
         // Fetch Member Dashboard Stats
         $recent_orders = $_db->prepare("
@@ -360,62 +353,32 @@ include '_head.php';
         <?php endif; ?>
     </div>
 
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: start;">
-        <div>
-            <h2>Recent Orders</h2>
-            <?php if (empty($recent_orders)): ?>
-                <p>No recent orders found.</p>
-            <?php else: ?>
-                <table class="table" style="width: 100%;">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Member</th>
-                            <th>Total (RM)</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recent_orders as $o): ?>
-                        <tr>
-                            <td><a href="/order/detail.php?id=<?= $o->id ?>" style="color: #5C4033; font-weight: bold;"><?= $o->id ?></a></td>
-                            <td><?= encode($o->user_name) ?></td>
-                            <td class="right"><?= sprintf('%.2f', $o->total) ?></td>
-                            <td><?= date('Y-m-d H:i', strtotime($o->datetime)) ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
-        </div>
-
-        <div>
-            <h2>Recent Activities (Audit Logs)</h2>
-            <?php if (empty($recent_logs)): ?>
-                <p>No recent activities found.</p>
-            <?php else: ?>
-                <table class="table" style="width: 100%;">
-                    <thead>
-                        <tr>
-                            <th>Module</th>
-                            <th>Action</th>
-                            <th>User</th>
-                            <th>Date</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($recent_logs as $l): ?>
-                        <tr>
-                            <td><?= encode($l->module) ?></td>
-                            <td><a href="/admin/audit_detail.php?id=<?= $l->id ?>" style="color: #5C4033; font-weight: bold;"><?= encode($l->action) ?></a></td>
-                            <td><?= $l->username ? encode($l->username) : 'Guest' ?></td>
-                            <td><?= date('Y-m-d H:i', strtotime($l->created_at)) ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php endif; ?>
-        </div>
+    <div style="margin-top: 30px;">
+        <h2>Recent Orders</h2>
+        <?php if (empty($recent_orders)): ?>
+            <p>No recent orders found.</p>
+        <?php else: ?>
+            <table class="table" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Member</th>
+                        <th>Total (RM)</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($recent_orders as $o): ?>
+                    <tr>
+                        <td><a href="/order/detail.php?id=<?= $o->id ?>" style="color: #5C4033; font-weight: bold;"><?= $o->id ?></a></td>
+                        <td><?= encode($o->user_name) ?></td>
+                        <td class="right"><?= sprintf('%.2f', $o->total) ?></td>
+                        <td><?= date('Y-m-d H:i', strtotime($o->datetime)) ?></td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        <?php endif; ?>
     </div>
 
 <?php elseif ($_user->role == 'Member'): ?>

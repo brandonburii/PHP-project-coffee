@@ -388,18 +388,7 @@ function auth(...$roles) {
 // ============================================================================
 
 function audit($module, $action, $description = '') {
-    global $_db, $_user;
-
-    $user_id    = $_user->id ?? null;
-    $username   = $_user->name ?? null;
-    $user_role  = $_user->role ?? null;
-    $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'unknown';
-
-    $stm = $_db->prepare('
-        INSERT INTO audit_log (user_id, username, user_role, action, module, description, ip_address)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    ');
-    $stm->execute([$user_id, $username, $user_role, $action, $module, $description, $ip_address]);
+    // Audit logging disabled
 }
 
 // ============================================================================
