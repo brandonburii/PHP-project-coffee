@@ -126,20 +126,21 @@ include '../_head.php';
     <?php else: ?>
         <?php foreach ($arr as $p): ?>
         <?php
-        $cart     = get_cart();
-        $id       = $p->id;
-        $unit     = $cart[$p->id] ?? 0;
-        $max_unit = min($p->stock, 10);
-        $in_stock = $max_unit >= 1;
-        $on_sale  = is_on_sale($p);
-        $price    = product_price($p);
+        $cart      = get_cart();
+        $id        = $p->id;
+        $in_cart   = $cart[$p->id] ?? 0;
+        $available = max($p->stock - $in_cart, 0);
+        $max_unit  = min($available, 10);
+        $in_stock  = $available >= 1;
+        $on_sale   = is_on_sale($p);
+        $price     = product_price($p);
         $in_compare = in_array($p->id, $compare);
-        $img      = photo_url($p->photo);
+        $img       = photo_url($p->photo);
         ?>
         <div class="product <?= $in_stock ? '' : 'is-soldout' ?>">
             <div class="thumb">
-                <?php if ($unit): ?>
-                    <span class="badge in-cart"><?= $unit ?> in cart</span>
+                <?php if ($in_cart): ?>
+                    <span class="badge in-cart"><?= $in_cart ?> in cart</span>
                 <?php endif ?>
                 <?php if (!empty($p->tag)): ?>
                     <span class="badge tag-badge"><?= encode($p->tag) ?></span>
@@ -167,25 +168,19 @@ include '../_head.php';
                         <?php endif ?>
                         RM <?= sprintf('%.2f', $price) ?>
                     </div>
-                    <span class="avail <?= $in_stock ? '' : 'out' ?>">
-                        <?= $in_stock ? $p->stock . ' available' : 'Unavailable' ?>
-                    </span>
+                    <div class="avail-box <?= $in_stock ? 'in' : 'out' ?>" data-product-id="<?= encode($p->id) ?>" data-available="<?= $available ?>">
+                        <?= $in_stock ? $available . ' available' : 'Out of stock' ?>
+                    </div>
                 </div>
 
                 <?php if ($in_stock): ?>
-                    <form method="post" class="actions ajax-cart">
+                    <form method="post" class="actions ajax-cart" data-cart-mode="add">
                         <?= html_hidden('id', "id='id_$p->id'") ?>
-                        <?php
-                        $row_units = array_combine(range(1, $max_unit), range(1, $max_unit));
-                        html_select('unit', $row_units, null, "id='unit_$p->id'");
-                        ?>
-                        <button type="submit">Add to Cart</button>
+                        <input type="hidden" name="unit" id="unit_<?= $p->id ?>" value="1">
+                        <button type="button" data-ask-qty data-max="<?= $max_unit ?>">Add to Cart</button>
                     </form>
                 <?php else: ?>
                     <div class="actions">
-                        <select disabled aria-label="Quantity unavailable">
-                            <option>0</option>
-                        </select>
                         <button type="button" disabled>Sold Out</button>
                     </div>
                 <?php endif ?>
