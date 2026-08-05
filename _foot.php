@@ -2,8 +2,8 @@
     </div> <!-- #wrapper -->
 
     <footer>
-        Developed by <b>BAE SUZY</b> &middot;
-        Copyrighted &copy; <?= date('Y') ?>
+        footer here dont know what to put here yet so please ignore
+        
     </footer>
 </body>
 </html>

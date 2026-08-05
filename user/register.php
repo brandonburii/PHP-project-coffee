@@ -71,35 +71,44 @@ $_title = 'User | Register Member';
 include '../_head.php';
 ?>
 
-<form method="post" class="form" enctype="multipart/form-data">
-    <label for="email">Email</label>
-    <?= html_text('email', 'maxlength="100"') ?>
-    <?= err('email') ?>
+<div class="auth-card">
+    <div class="auth-card-head">
+        <h2>Create your account</h2>
+        <p>Join Specialty Coffee &amp; Tea. Fields marked <span class="req">*</span> are required.</p>
+    </div>
 
-    <label for="password">Password</label>
-    <?= html_password('password', 'maxlength="100"') ?>
-    <?= err('password') ?>
+    <form method="post" class="form auth-form" enctype="multipart/form-data">
+        <label for="email">Email <span class="req">*</span></label>
+        <?= html_text('email', 'maxlength="100" required placeholder="you@email.com"') ?>
+        <?= err('email') ?>
 
-    <label for="confirm">Confirm Password</label>
-    <?= html_password('confirm', 'maxlength="100"') ?>
-    <?= err('confirm') ?>
+        <label for="password">Password <span class="req">*</span></label>
+        <?= html_password('password', 'maxlength="100" required placeholder="Min. 6 characters"') ?>
+        <?= err('password') ?>
 
-    <label for="name">Name</label>
-    <?= html_text('name', 'maxlength="100"') ?>
-    <?= err('name') ?>
+        <label for="confirm">Confirm Password <span class="req">*</span></label>
+        <?= html_password('confirm', 'maxlength="100" required placeholder="Re-enter password"') ?>
+        <?= err('confirm') ?>
 
-    <label for="photo">Photo</label>
-    <label class="upload">
-        <?= html_file('photo', 'image/*') ?>
-        <img src="/photos/0.jpg">
-    </label>
-    <?= err('photo') ?>
+        <label for="name">Name <span class="req">*</span></label>
+        <?= html_text('name', 'maxlength="100" required placeholder="Your full name"') ?>
+        <?= err('name') ?>
 
-    <section>
-        <button>Register</button>
-        <button type="reset">Reset</button>
-    </section>
-</form>
+        <label for="photo">Profile Photo <span class="req">*</span></label>
+        <label class="upload">
+            <?= html_file('photo', 'image/*', 'required') ?>
+            <img src="/photos/0.jpg" alt="Preview">
+            <span class="upload-hint">Click to upload image</span>
+        </label>
+        <?= err('photo') ?>
+
+        <section>
+            <button>Register</button>
+            <button type="reset">Reset</button>
+            <button type="button" class="secondary" data-get="/login.php">Already have an account?</button>
+        </section>
+    </form>
+</div>
 
 <?php
 include '../_foot.php';

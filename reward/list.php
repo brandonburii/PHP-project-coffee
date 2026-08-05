@@ -95,7 +95,7 @@ include '../_head.php';
             ?>
             <article class="reward-card <?= $can ? '' : 'is-locked' ?>">
                 <div class="reward-card-media">
-                    <img src="/photos/<?= $r->photo ?>" alt="<?= encode($r->name) ?>">
+                    <img src="/photos/<?= photo_url($r->photo) ?>" alt="<?= encode($r->name) ?>">
                     <?php if ($r->stock < 1): ?>
                         <span class="reward-badge out">Out of stock</span>
                     <?php elseif ($points < $r->points): ?>

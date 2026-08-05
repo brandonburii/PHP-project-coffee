@@ -92,7 +92,6 @@ if (is_post()) {
         $_db->beginTransaction();
 
         try {
-            // Insert order (values filled in after computing items)
             $stm = $_db->prepare('
                 INSERT INTO `order`
                     (datetime, count, subtotal, discount, total, points_earned, points_used, voucher_code, user_id)
@@ -121,13 +120,10 @@ if (is_post()) {
 
                     $stm_item->execute([$order_id, $id, $unit_price, $unit, $line]);
                     $stm_deduct->execute([$unit, $id]);
-
-                    // Stock history: products sold
                     log_stock($id, 'sold', $p->stock, $p->stock - $unit);
                 }
             }
 
-            // Update order totals
             $stm_update = $_db->prepare('
                 UPDATE `order`
                 SET count = ?, subtotal = ?, discount = ?, total = ?, points_earned = ?, points_used = ?
@@ -135,11 +131,9 @@ if (is_post()) {
             ');
             $stm_update->execute([$chk_count, $subtotal, $discount, $total, $earned, $points_used, $order_id]);
 
-            // Update member points balance (deduct used, add earned)
             $stm_points = $_db->prepare('UPDATE user SET points = points - ? + ? WHERE id = ?');
             $stm_points->execute([$points_used, $earned, $_user->id]);
 
-            // Increment voucher usage after successful order
             if ($vcode) {
                 voucher_use($vcode);
             }
@@ -148,10 +142,8 @@ if (is_post()) {
 
             audit('Orders', 'Checkout completed', "Order ID $order_id | subtotal: $subtotal, discount: $discount, total: $total, points used: $points_used, earned: $earned, voucher: " . ($vcode ?? '-'));
 
-            // Keep the session user's points in sync
             $_SESSION['user']->points = $available_points - $points_used + $earned;
 
-            // Clear cart + redirect to detail
             set_cart();
             temp('info', 'Checkout successful');
             redirect("detail.php?id=$order_id");
@@ -163,8 +155,6 @@ if (is_post()) {
         }
     }
 }
-
-// ----------------------------------------------------------------------------
 
 // Preview discount for the review screen (based on current inputs)
 $preview_voucher   = ($code != '') ? get_valid_voucher($code, $subtotal) : null;
@@ -185,76 +175,113 @@ $_title = 'Order | Checkout';
 include '../_head.php';
 ?>
 
-<div style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 26px; align-items: start;">
+<div class="checkout-layout">
 
-    <!-- Order items -->
-    <div>
-        <h2 style="margin-top: 0;">Order Summary</h2>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Product</th>
-                    <th class="right">Price (RM)</th>
-                    <th class="right">Qty</th>
-                    <th class="right">Subtotal (RM)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($items as $it): ?>
-                <tr>
-                    <td><?= encode($it->product->name) ?></td>
-                    <td class="right"><?= sprintf('%.2f', $it->price ?? product_price($it->product)) ?></td>
-                    <td class="right"><?= $it->unit ?></td>
-                    <td class="right"><?= sprintf('%.2f', $it->subtotal) ?></td>
-                </tr>
-                <?php endforeach ?>
-            </tbody>
-        </table>
+    <div class="checkout-items">
+        <div class="checkout-head">
+            <h2>Your Order</h2>
+            <a href="cart.php" class="checkout-edit">Edit cart →</a>
+        </div>
+
+        <div class="checkout-list">
+            <?php foreach ($items as $it):
+                $p = $it->product;
+            ?>
+            <article class="checkout-item">
+                <img src="/photos/<?= photo_url($p->photo) ?>" alt="<?= encode($p->name) ?>">
+                <div class="checkout-item-info">
+                    <h3><?= encode($p->name) ?></h3>
+                    <p>Qty <?= (int) $it->unit ?> · RM <?= sprintf('%.2f', $it->price) ?> each</p>
+                </div>
+                <div class="checkout-item-total">RM <?= sprintf('%.2f', $it->subtotal) ?></div>
+            </article>
+            <?php endforeach ?>
+        </div>
     </div>
 
-    <!-- Payment / discounts -->
-    <div class="card">
-        <h2 style="margin-top: 0;">Payment</h2>
+    <aside class="card checkout-pay">
+        <h2>Payment</h2>
 
-        <form method="post" class="form" style="max-width: none;">
+        <form method="post" class="form checkout-form" id="checkout-form" style="max-width:none;">
             <label for="code">Voucher Code</label>
-            <?= html_text('code', 'maxlength="20" placeholder="e.g. WELCOME10" data-upper') ?>
-            <?= err('code') ?>
+            <?= html_text('code', 'maxlength="20" placeholder="e.g. WELCOME10" data-upper autocomplete="off"') ?>
+            <span class="err" id="voucher-err"><?= $_err['code'] ?? '' ?></span>
 
             <label for="points">Redeem Points</label>
             <?= html_number('points', 0, $available_points, 1, 'placeholder="0"') ?>
             <?= err('points') ?>
 
             <section style="display:block;">
-                <p style="color: var(--muted); font-size: .85rem; margin: 4px 0 14px;">
+                <p class="checkout-hint">
                     You have <b><?= $available_points ?></b> point(s).
-                    Earn <?= rtrim(rtrim(sprintf('%.2f', $pts_per_rm), '0'), '.') ?> pt per RM1 spent.
-                    1 point = RM <?= sprintf('%.2f', $cash_rate) ?> at checkout.
+                    Earn <?= rtrim(rtrim(sprintf('%.2f', $pts_per_rm), '0'), '.') ?> pt per RM1.
+                    1 point = RM <?= sprintf('%.2f', $cash_rate) ?>.
                 </p>
 
-                <div style="display:flex; flex-direction:column; gap:8px; border-top:1px solid var(--line); padding-top:14px;">
-                    <div style="display:flex; justify-content:space-between;">
-                        <span>Subtotal</span>
-                        <span>RM <?= sprintf('%.2f', $subtotal) ?></span>
+                <div class="checkout-totals">
+                    <div class="cart-summary-row">
+                        <span>Subtotal (<?= $count ?> items)</span>
+                        <span>RM <span id="preview-subtotal"><?= sprintf('%.2f', $subtotal) ?></span></span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; color: var(--green);">
+                    <div class="cart-summary-row discount">
                         <span>Discount</span>
-                        <span>&minus; RM <?= sprintf('%.2f', $preview_vdiscount + $preview_pdiscount) ?></span>
+                        <span>&minus; RM <span id="preview-discount"><?= sprintf('%.2f', $preview_vdiscount + $preview_pdiscount) ?></span></span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-weight:700; font-size:1.15rem; color: var(--coffee); border-top:1px solid var(--line); padding-top:8px;">
+                    <div class="cart-summary-row total">
                         <span>Total</span>
-                        <span>RM <?= sprintf('%.2f', max($preview_total, 0)) ?></span>
+                        <span>RM <b id="preview-total"><?= sprintf('%.2f', max($preview_total, 0)) ?></b></span>
+                    </div>
+                    <div class="cart-summary-row muted">
+                        <span>Points you will earn</span>
+                        <span id="preview-earn"><?= points_earned(max($preview_total, 0)) ?></span>
                     </div>
                 </div>
 
-                <div style="display:flex; gap:10px; margin-top:18px;">
-                    <button type="submit" class="success">Confirm &amp; Place Order</button>
-                    <button type="button" class="secondary" data-get="cart.php">Back to Cart</button>
+                <div class="checkout-actions">
+                    <button type="submit" class="success" style="width:100%;">Confirm &amp; Place Order</button>
+                    <button type="button" class="secondary" data-get="cart.php" style="width:100%;">Back to Cart</button>
                 </div>
             </section>
         </form>
-    </div>
+    </aside>
 </div>
 
-<?php
-include '../_foot.php';
+<script>
+$(() => {
+    let timer = null;
+
+    function preview() {
+        $.ajax({
+            url: '/order/cart_api.php',
+            method: 'POST',
+            dataType: 'json',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            data: {
+                action: 'preview',
+                code: $('#code').val(),
+                points: $('#points').val() || 0
+            }
+        }).done(res => {
+            if (!res.ok) return;
+            $('#preview-subtotal').text(res.subtotal_fmt);
+            $('#preview-discount').text(res.discount_fmt);
+            $('#preview-total').text(res.total_fmt);
+            $('#preview-earn').text(res.points_earned);
+
+            const $err = $('#voucher-err');
+            if (res.voucher_error) {
+                $err.text(res.voucher_error);
+            } else {
+                $err.text('');
+            }
+        });
+    }
+
+    $('#code, #points').on('input change', () => {
+        clearTimeout(timer);
+        timer = setTimeout(preview, 280);
+    });
+});
+</script>
+
+<?php include '../_foot.php';

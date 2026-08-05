@@ -19,6 +19,16 @@ if (is_post()) {
 
     $id   = req('id');
     $unit = req('unit');
+
+    // Block add-to-cart when out of stock
+    $stm = $_db->prepare('SELECT stock FROM product WHERE id = ?');
+    $stm->execute([$id]);
+    $stock = (int) $stm->fetchColumn();
+    if ($stock < 1) {
+        temp('info', 'This product is out of stock');
+        redirect();
+    }
+
     audit('Cart', 'Added product to cart', "Added product ID $id with quantity $unit from product list page");
     update_cart($id, $unit);
     redirect();
@@ -58,22 +68,20 @@ include '../_head.php';
         $on_sale  = is_on_sale($p);
         $price    = product_price($p);
         $in_compare = in_array($p->id, $compare);
+        $img      = photo_url($p->photo);
         ?>
-        <div class="product">
+        <div class="product <?= $in_stock ? '' : 'is-soldout' ?>">
             <div class="thumb">
-                <span class="badge <?= $in_stock ? '' : 'out' ?>">
-                    <?= $in_stock ? 'Available' : 'Not Available' ?>
-                </span>
                 <?php if ($unit): ?>
                     <span class="badge in-cart"><?= $unit ?> in cart</span>
                 <?php endif ?>
                 <?php if (!empty($p->tag)): ?>
-                    <span class="badge" style="top:auto; bottom:10px; left:10px; background:var(--coffee);"><?= encode($p->tag) ?></span>
+                    <span class="badge tag-badge"><?= encode($p->tag) ?></span>
                 <?php endif ?>
-                <?php if ($on_sale): ?>
-                    <span class="badge" style="top:10px; left:auto; right:10px; background:var(--red);">SALE</span>
+                <?php if ($on_sale && $in_stock): ?>
+                    <span class="badge sale-badge">SALE</span>
                 <?php endif ?>
-                <img src="/photos/<?= $p->photo ?>"
+                <img src="/photos/<?= $img ?>"
                      alt="<?= encode($p->name) ?>"
                      data-get="/product/detail.php?id=<?= $p->id ?>">
             </div>
@@ -81,22 +89,25 @@ include '../_head.php';
             <div class="info">
                 <div class="name"><?= encode($p->name) ?></div>
                 <?php if (!empty($p->origin) || !empty($p->roast)): ?>
-                    <div class="avail" style="color:var(--muted);">
+                    <div class="meta-line">
                         <?= encode(trim(($p->origin ?? '') . (!empty($p->origin) && !empty($p->roast) ? ' · ' : '') . ($p->roast ?? ''))) ?>
                     </div>
                 <?php endif ?>
-                <div class="avail <?= $in_stock ? '' : 'out' ?>">
-                    <?= $in_stock ? $p->stock . ' in stock' : 'Out of stock' ?>
-                </div>
-                <div class="price">
-                    <?php if ($on_sale): ?>
-                        <span style="text-decoration:line-through; color:var(--muted); font-size:.9rem; font-weight:500; margin-right:6px;">RM <?= sprintf('%.2f', $p->price) ?></span>
-                    <?php endif ?>
-                    RM <?= sprintf('%.2f', $price) ?>
+
+                <div class="price-row">
+                    <div class="price">
+                        <?php if ($on_sale && $in_stock): ?>
+                            <span class="price-was">RM <?= sprintf('%.2f', $p->price) ?></span>
+                        <?php endif ?>
+                        RM <?= sprintf('%.2f', $price) ?>
+                    </div>
+                    <span class="avail <?= $in_stock ? '' : 'out' ?>">
+                        <?= $in_stock ? $p->stock . ' available' : 'Unavailable' ?>
+                    </span>
                 </div>
 
                 <?php if ($in_stock): ?>
-                    <form method="post" class="actions">
+                    <form method="post" class="actions ajax-cart">
                         <?= html_hidden('id', "id='id_$p->id'") ?>
                         <?php
                         $row_units = array_combine(range(1, $max_unit), range(1, $max_unit));
@@ -106,7 +117,10 @@ include '../_head.php';
                     </form>
                 <?php else: ?>
                     <div class="actions">
-                        <button type="button" disabled style="opacity:.6;cursor:not-allowed;width:100%;">Sold Out</button>
+                        <select disabled aria-label="Quantity unavailable">
+                            <option>0</option>
+                        </select>
+                        <button type="button" disabled>Sold Out</button>
                     </div>
                 <?php endif ?>
 

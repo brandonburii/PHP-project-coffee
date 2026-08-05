@@ -69,16 +69,38 @@ function get_file($key) {
     return null;
 }
 
-// Crop, resize and save photo
+// Crop, resize and save photo (falls back to plain copy if GD is unavailable)
 function save_photo($f, $folder, $width = 200, $height = 200) {
     $photo = uniqid() . '.jpg';
-    
-    require_once __DIR__ . '/lib/SimpleImage.php';
-    $img = new SimpleImage();
-    $img->fromFile($f->tmp_name)
-        ->thumbnail($width, $height)
-        ->toFile("$folder/$photo", 'image/jpeg');
+    $dest  = "$folder/$photo";
 
+    if (extension_loaded('gd')) {
+        require_once __DIR__ . '/lib/SimpleImage.php';
+        $img = new SimpleImage();
+        $img->fromFile($f->tmp_name)
+            ->thumbnail($width, $height)
+            ->toFile($dest, 'image/jpeg');
+    }
+    else {
+        // GD missing — store original upload so register/create still works
+        if (!move_uploaded_file($f->tmp_name, $dest)) {
+            copy($f->tmp_name, $dest);
+        }
+    }
+
+    return $photo;
+}
+
+// Resolve product/user photo path (default placeholder when missing)
+function photo_url($photo, $fallback = '0.jpg') {
+    $photo = trim((string) $photo);
+    if ($photo == '' || $photo == 'null') {
+        return $fallback;
+    }
+    $path = __DIR__ . '/photos/' . $photo;
+    if (!is_file($path)) {
+        return $fallback;
+    }
     return $photo;
 }
 

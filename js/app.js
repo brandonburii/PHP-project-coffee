@@ -88,7 +88,83 @@ $(() => {
         }
     });
 
+    // AJAX Add to Cart (product list / detail / buy again)
+    $(document).on('submit', 'form.ajax-cart', function (e) {
+        e.preventDefault();
+        const $form = $(this);
+        const id = $form.find('[name=id]').val();
+        const unit = $form.find('[name=unit]').val() || 1;
+        const mode = $form.data('cart-mode') || 'set'; // set | add
+        const $btn = $form.find('button[type=submit]');
+
+        $btn.prop('disabled', true);
+
+        $.ajax({
+            url: '/order/cart_api.php',
+            method: 'POST',
+            dataType: 'json',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            data: { action: mode === 'add' ? 'add' : 'update', id, unit }
+        }).done(res => {
+            if (!res.ok) {
+                showToast(res.error || 'Could not add to cart');
+                return;
+            }
+            updateNavCartBadge(res.line_count);
+            showToast(res.message || 'Added to cart');
+
+            const $card = $form.closest('.product, .product-detail');
+            const item = (res.items || []).find(i => String(i.id) === String(id));
+            if (item) {
+                let $badge = $card.find('.badge.in-cart');
+                if (!$badge.length && $card.find('.thumb').length) {
+                    $badge = $('<span class="badge in-cart"></span>');
+                    $card.find('.thumb').prepend($badge);
+                }
+                if ($badge.length) $badge.text(item.unit + ' in cart');
+
+                let $pd = $form.find('.badge-status.success');
+                if ($pd.length) {
+                    $pd.text(item.unit + ' in cart');
+                } else if ($form.hasClass('pd-buy')) {
+                    $form.append('<span class="badge-status success">' + item.unit + ' in cart</span>');
+                }
+            }
+        }).fail(() => {
+            showToast('Network error');
+        }).always(() => {
+            $btn.prop('disabled', false);
+        });
+    });
+
 });
+
+// ============================================================================
+// Cart helpers (AJAX)
+// ============================================================================
+
+function updateNavCartBadge(lineCount) {
+    const $link = $('nav a[href="/order/cart.php"]');
+    if (!$link.length) return;
+    let $b = $link.find('.nav-badge');
+    if (lineCount > 0) {
+        if (!$b.length) $b = $('<span class="nav-badge"></span>').appendTo($link);
+        $b.text(lineCount);
+    } else {
+        $b.remove();
+    }
+}
+
+function showToast(msg) {
+    if (!msg) return;
+    let $t = $('#cart-toast');
+    if (!$t.length) {
+        $t = $('<div id="cart-toast" class="cart-toast"></div>').appendTo('body');
+    }
+    $t.text(msg).addClass('show');
+    clearTimeout(window._cartToast);
+    window._cartToast = setTimeout(() => $t.removeClass('show'), 1800);
+}
 
 // ============================================================================
 // Confirmation Modal

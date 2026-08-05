@@ -43,7 +43,7 @@ include '../_head.php';
         <tr>
             <td>
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <img src="/photos/<?= $h->photo ?>" style="width:40px;height:40px;object-fit:cover;border-radius:8px;">
+                    <img src="/photos/<?= photo_url($h->photo) ?>" style="width:40px;height:40px;object-fit:cover;border-radius:8px;">
                     <?= encode($h->reward_name) ?>
                 </div>
             </td>

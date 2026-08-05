@@ -18,6 +18,14 @@ if (is_post()) {
 
     $id   = req('id');
     $unit = req('unit');
+
+    $stm = $_db->prepare('SELECT stock FROM product WHERE id = ?');
+    $stm->execute([$id]);
+    if ((int) $stm->fetchColumn() < 1) {
+        temp('info', 'This product is out of stock');
+        redirect();
+    }
+
     audit('Cart', 'Added product to cart', "Added product ID $id with quantity $unit from product detail page");
     update_cart($id, $unit);
     redirect();
@@ -81,7 +89,7 @@ $in_compare = in_array($p->id, get_compare());
 
 <div class="product-detail">
     <div class="gallery">
-        <img src="/photos/<?= $p->photo ?>" alt="<?= encode($p->name) ?>">
+        <img src="/photos/<?= photo_url($p->photo) ?>" alt="<?= encode($p->name) ?>">
     </div>
 
     <div class="pd-info">
@@ -90,23 +98,22 @@ $in_compare = in_array($p->id, get_compare());
             <?php if (!empty($p->tag)): ?>
                 <span class="badge-status process"><?= encode($p->tag) ?></span>
             <?php endif ?>
-            <?php if ($on_sale): ?>
+            <?php if ($on_sale && $in_stock): ?>
                 <span class="badge-status danger">Flash Sale</span>
             <?php endif ?>
         </h2>
 
-        <div class="pd-price">
-            <?php if ($on_sale): ?>
-                <span style="text-decoration:line-through; color:var(--muted); font-size:1rem; font-weight:500; margin-right:8px;">RM <?= sprintf('%.2f', $p->price) ?></span>
-            <?php endif ?>
-            RM <?= sprintf('%.2f', $price) ?>
-        </div>
-
-        <p>
-            <span class="badge-status <?= $in_stock ? 'success' : 'danger' ?>">
-                <?= $in_stock ? 'In Stock' : 'Out of Stock' ?>
+        <div class="price-row pd-price-row">
+            <div class="pd-price">
+                <?php if ($on_sale && $in_stock): ?>
+                    <span style="text-decoration:line-through; color:var(--muted); font-size:1rem; font-weight:500; margin-right:8px;">RM <?= sprintf('%.2f', $p->price) ?></span>
+                <?php endif ?>
+                RM <?= sprintf('%.2f', $price) ?>
+            </div>
+            <span class="avail <?= $in_stock ? '' : 'out' ?>">
+                <?= $in_stock ? $p->stock . ' available' : 'Unavailable' ?>
             </span>
-        </p>
+        </div>
 
         <?php if (!empty($p->description)): ?>
             <p style="color: var(--muted); line-height: 1.6;"><?= encode($p->description) ?></p>
@@ -129,11 +136,7 @@ $in_compare = in_array($p->id, get_compare());
                 <span><?= encode($p->roast) ?></span>
             </div>
             <?php endif ?>
-            <div class="row">
-                <span class="label">Availability</span>
-                <span><?= $in_stock ? $p->stock . ' unit(s) in stock' : 'Currently unavailable' ?></span>
-            </div>
-            <?php if ($on_sale): ?>
+            <?php if ($on_sale && $in_stock): ?>
             <div class="row">
                 <span class="label">Sale Ends</span>
                 <span><?= date('Y-m-d H:i', strtotime($p->sale_end)) ?></span>
@@ -142,7 +145,7 @@ $in_compare = in_array($p->id, get_compare());
         </div>
 
         <?php if ($in_stock): ?>
-            <form method="post" class="pd-buy">
+            <form method="post" class="pd-buy ajax-cart">
                 <?= html_hidden('id', "id='id_$p->id'") ?>
                 <?php
                 $row_units = array_combine(range(1, $max_unit), range(1, $max_unit));
@@ -155,6 +158,7 @@ $in_compare = in_array($p->id, get_compare());
             </form>
         <?php else: ?>
             <div class="pd-buy">
+                <select disabled aria-label="Quantity unavailable"><option>0</option></select>
                 <button type="button" disabled>Sold Out</button>
             </div>
         <?php endif ?>
@@ -184,18 +188,20 @@ $in_compare = in_array($p->id, get_compare());
             <div class="product">
                 <div class="thumb">
                     <?php if (!empty($ap->tag)): ?>
-                        <span class="badge" style="background:var(--coffee);"><?= encode($ap->tag) ?></span>
+                        <span class="badge tag-badge"><?= encode($ap->tag) ?></span>
                     <?php endif ?>
                     <?php if ($on_sale): ?>
-                        <span class="badge" style="left:auto; right:10px; background:var(--red);">SALE</span>
+                        <span class="badge sale-badge">SALE</span>
                     <?php endif ?>
-                    <img src="/photos/<?= $ap->photo ?>"
+                    <img src="/photos/<?= photo_url($ap->photo) ?>"
                          alt="<?= encode($ap->name) ?>"
                          data-get="/product/detail.php?id=<?= $ap->id ?>">
                 </div>
                 <div class="info">
                     <div class="name"><?= encode($ap->name) ?></div>
-                    <div class="price">RM <?= sprintf('%.2f', product_price($ap)) ?></div>
+                    <div class="price-row">
+                        <div class="price">RM <?= sprintf('%.2f', product_price($ap)) ?></div>
+                    </div>
                     <button class="secondary" data-get="/product/detail.php?id=<?= $ap->id ?>" style="width:100%;">View</button>
                 </div>
             </div>

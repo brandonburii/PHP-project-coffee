@@ -99,13 +99,13 @@ if ($_user) {
         $recent_orders->execute([$_user->id]);
         $recent_orders = $recent_orders->fetchAll();
 
-        // Buy Again — products this member ordered before (still in stock)
+        // Buy Again — products this member ordered before (include out-of-stock)
         $stm = $_db->prepare('
             SELECT p.*, MAX(o.datetime) AS last_bought
             FROM product p
             JOIN item i ON i.product_id = p.id
             JOIN `order` o ON o.id = i.order_id
-            WHERE o.user_id = ? AND p.stock > 0
+            WHERE o.user_id = ?
             GROUP BY p.id
             ORDER BY last_bought DESC
             LIMIT 6
@@ -232,22 +232,36 @@ include '_head.php';
         <h2>Recently Viewed</h2>
         <div id="products">
             <?php foreach ($recent_products as $p): ?>
-                <?php $on_sale = is_on_sale($p); ?>
-                <div class="product">
+                <?php
+                $on_sale  = is_on_sale($p);
+                $in_stock = (int) $p->stock > 0;
+                $price    = product_price($p);
+                ?>
+                <div class="product <?= $in_stock ? '' : 'is-soldout' ?>">
                     <div class="thumb">
                         <?php if (!empty($p->tag)): ?>
-                            <span class="badge" style="background:var(--coffee);"><?= encode($p->tag) ?></span>
+                            <span class="badge tag-badge"><?= encode($p->tag) ?></span>
                         <?php endif ?>
-                        <?php if ($on_sale): ?>
-                            <span class="badge" style="left:auto; right:10px; background:var(--red);">SALE</span>
+                        <?php if ($on_sale && $in_stock): ?>
+                            <span class="badge sale-badge">SALE</span>
                         <?php endif ?>
-                        <img src="/photos/<?= $p->photo ?>"
+                        <img src="/photos/<?= photo_url($p->photo) ?>"
                              alt="<?= encode($p->name) ?>"
                              data-get="/product/detail.php?id=<?= $p->id ?>">
                     </div>
                     <div class="info">
                         <div class="name"><?= encode($p->name) ?></div>
-                        <div class="price">RM <?= sprintf('%.2f', product_price($p)) ?></div>
+                        <div class="price-row">
+                            <div class="price">
+                                <?php if ($on_sale && $in_stock): ?>
+                                    <span class="price-was">RM <?= sprintf('%.2f', $p->price) ?></span>
+                                <?php endif ?>
+                                RM <?= sprintf('%.2f', $price) ?>
+                            </div>
+                            <span class="avail <?= $in_stock ? '' : 'out' ?>">
+                                <?= $in_stock ? $p->stock . ' available' : 'Unavailable' ?>
+                            </span>
+                        </div>
                         <button class="secondary" data-get="/product/detail.php?id=<?= $p->id ?>" style="width:100%;">View</button>
                     </div>
                 </div>
@@ -309,7 +323,7 @@ include '_head.php';
             <?php foreach ($low_reward_stock as $lr): ?>
             <a href="/admin/reward_edit.php?id=<?= (int) $lr->id ?>"
                style="display:flex; align-items:center; gap:14px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; text-decoration:none; color:inherit; background:#fff;">
-                <img src="/photos/<?= $lr->photo ?>" alt=""
+                <img src="/photos/<?= photo_url($lr->photo) ?>" alt=""
                      style="width:42px; height:42px; object-fit:cover; border-radius:8px; border:1px solid var(--line);">
                 <div style="flex:1; min-width:0;">
                     <div style="font-weight:600; color:var(--coffee-dark);"><?= encode($lr->name) ?></div>
@@ -402,7 +416,7 @@ include '_head.php';
         <div class="card loyalty-featured">
             <h3 style="margin-top:0;">Featured Reward</h3>
             <div style="display:flex; gap:14px; align-items:center;">
-                <img src="/photos/<?= $featured_reward->photo ?>" alt=""
+                <img src="/photos/<?= photo_url($featured_reward->photo) ?>" alt=""
                      style="width:72px;height:72px;object-fit:cover;border-radius:12px;border:1px solid var(--line);">
                 <div>
                     <div style="font-weight:700;color:var(--coffee-dark);"><?= encode($featured_reward->name) ?></div>
@@ -491,30 +505,50 @@ include '_head.php';
         <p style="color:var(--muted); margin-top:-8px;">Products you purchased before — one click to add them back.</p>
         <div id="products">
             <?php foreach ($buy_again as $p): ?>
-                <?php $on_sale = is_on_sale($p); ?>
-                <div class="product">
+                <?php
+                $on_sale  = is_on_sale($p);
+                $in_stock = (int) $p->stock > 0;
+                $price    = product_price($p);
+                ?>
+                <div class="product <?= $in_stock ? '' : 'is-soldout' ?>">
                     <div class="thumb">
                         <?php if (!empty($p->tag)): ?>
-                            <span class="badge" style="background:var(--coffee);"><?= encode($p->tag) ?></span>
+                            <span class="badge tag-badge"><?= encode($p->tag) ?></span>
                         <?php endif ?>
-                        <?php if ($on_sale): ?>
-                            <span class="badge" style="left:auto; right:10px; background:var(--red);">SALE</span>
+                        <?php if ($on_sale && $in_stock): ?>
+                            <span class="badge sale-badge">SALE</span>
                         <?php endif ?>
-                        <img src="/photos/<?= $p->photo ?>"
+                        <img src="/photos/<?= photo_url($p->photo) ?>"
                              alt="<?= encode($p->name) ?>"
                              data-get="/product/detail.php?id=<?= $p->id ?>">
                     </div>
                     <div class="info">
                         <div class="name"><?= encode($p->name) ?></div>
-                        <div class="avail" style="color:var(--muted);">
+                        <div class="meta-line">
                             Last bought <?= date('Y-m-d', strtotime($p->last_bought)) ?>
                         </div>
-                        <div class="price">RM <?= sprintf('%.2f', product_price($p)) ?></div>
-                        <form method="post" class="actions">
-                            <input type="hidden" name="btn" value="buy_again">
-                            <input type="hidden" name="id" value="<?= encode($p->id) ?>">
-                            <button type="submit" style="width:100%;">Buy Again</button>
-                        </form>
+                        <div class="price-row">
+                            <div class="price">
+                                <?php if ($on_sale && $in_stock): ?>
+                                    <span class="price-was">RM <?= sprintf('%.2f', $p->price) ?></span>
+                                <?php endif ?>
+                                RM <?= sprintf('%.2f', $price) ?>
+                            </div>
+                            <span class="avail <?= $in_stock ? '' : 'out' ?>">
+                                <?= $in_stock ? $p->stock . ' available' : 'Unavailable' ?>
+                            </span>
+                        </div>
+                        <?php if ($in_stock): ?>
+                            <form method="post" class="actions ajax-cart" data-cart-mode="add">
+                                <input type="hidden" name="id" value="<?= encode($p->id) ?>">
+                                <input type="hidden" name="unit" value="1">
+                                <button type="submit" style="width:100%;">Buy Again</button>
+                            </form>
+                        <?php else: ?>
+                            <div class="actions">
+                                <button type="button" disabled style="width:100%;">Sold Out</button>
+                            </div>
+                        <?php endif ?>
                     </div>
                 </div>
             <?php endforeach ?>
@@ -525,22 +559,36 @@ include '_head.php';
         <h2 style="margin-top: 36px;">Recently Viewed</h2>
         <div id="products">
             <?php foreach ($recent_products as $p): ?>
-                <?php $on_sale = is_on_sale($p); ?>
-                <div class="product">
+                <?php
+                $on_sale  = is_on_sale($p);
+                $in_stock = (int) $p->stock > 0;
+                $price    = product_price($p);
+                ?>
+                <div class="product <?= $in_stock ? '' : 'is-soldout' ?>">
                     <div class="thumb">
                         <?php if (!empty($p->tag)): ?>
-                            <span class="badge" style="background:var(--coffee);"><?= encode($p->tag) ?></span>
+                            <span class="badge tag-badge"><?= encode($p->tag) ?></span>
                         <?php endif ?>
-                        <?php if ($on_sale): ?>
-                            <span class="badge" style="left:auto; right:10px; background:var(--red);">SALE</span>
+                        <?php if ($on_sale && $in_stock): ?>
+                            <span class="badge sale-badge">SALE</span>
                         <?php endif ?>
-                        <img src="/photos/<?= $p->photo ?>"
+                        <img src="/photos/<?= photo_url($p->photo) ?>"
                              alt="<?= encode($p->name) ?>"
                              data-get="/product/detail.php?id=<?= $p->id ?>">
                     </div>
                     <div class="info">
                         <div class="name"><?= encode($p->name) ?></div>
-                        <div class="price">RM <?= sprintf('%.2f', product_price($p)) ?></div>
+                        <div class="price-row">
+                            <div class="price">
+                                <?php if ($on_sale && $in_stock): ?>
+                                    <span class="price-was">RM <?= sprintf('%.2f', $p->price) ?></span>
+                                <?php endif ?>
+                                RM <?= sprintf('%.2f', $price) ?>
+                            </div>
+                            <span class="avail <?= $in_stock ? '' : 'out' ?>">
+                                <?= $in_stock ? $p->stock . ' available' : 'Unavailable' ?>
+                            </span>
+                        </div>
                         <button class="secondary" data-get="/product/detail.php?id=<?= $p->id ?>" style="width:100%;">View</button>
                     </div>
                 </div>

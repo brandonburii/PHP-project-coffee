@@ -101,7 +101,7 @@ include '../_head.php';
     <label for="photo">Image</label>
     <label class="upload">
         <?= html_file('photo', 'image/*') ?>
-        <img src="/photos/<?= $r->photo ?>">
+        <img src="/photos/<?= photo_url($r->photo) ?>">
     </label>
     <?= err('photo') ?>
 
