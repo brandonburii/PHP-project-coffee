@@ -797,6 +797,29 @@ label.upload .upload-hint {
     color: #9A9A9A;
 }
 
+/* Availability box (light tones) */
+.avail-box {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 86px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    font-size: .85rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-sm);
+}
+.avail-box.in {
+    background: var(--green-soft);
+    color: var(--green);
+    border: 1px solid rgba(53,94,59,0.08);
+}
+.avail-box.out {
+    background: var(--red-soft);
+    color: var(--red);
+    border: 1px solid rgba(178,58,72,0.06);
+}
+
 .product .price {
     font-size: 1.15rem;
     font-weight: 700;
@@ -984,6 +1007,72 @@ label.upload .upload-hint {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+}
+
+.quantity-overlay .modal {
+    max-width: 360px;
+}
+
+.quantity-modal .modal-icon {
+    background: var(--green-soft);
+    color: var(--green);
+}
+
+.quantity-modal h3 {
+    margin-top: 0;
+}
+
+.quantity-modal .quantity-info {
+    margin: 0 0 18px;
+    color: var(--muted);
+    font-size: .95rem;
+    line-height: 1.4;
+}
+
+.quantity-modal .quantity-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+.quantity-modal .quantity-controls button {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 12px;
+    background: var(--cream);
+    color: var(--coffee-dark);
+    border: 1px solid var(--line);
+    font-size: 1.35rem;
+    line-height: 1;
+}
+
+.quantity-modal .quantity-controls button:hover {
+    background: var(--beige);
+}
+
+.quantity-modal .quantity-controls input {
+    width: 82px;
+    text-align: center;
+    font-size: 1.15rem;
+    padding: 10px 12px;
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+.quantity-modal .quantity-controls input::-webkit-outer-spin-button,
+.quantity-modal .quantity-controls input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.quantity-modal .quantity-available {
+    text-align: center;
+    color: var(--muted);
+    font-size: .9rem;
+    margin-bottom: 18px;
 }
 
 /* Product Detail (two-column) --------------------------------------------- */
