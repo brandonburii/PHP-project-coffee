@@ -617,13 +617,14 @@ function validate_voucher($code, $subtotal = 0) {
     if (!empty($v->start_date) && strtotime($v->start_date) > strtotime(date('Y-m-d'))) {
         return ['ok' => false, 'error' => 'Voucher is not active yet', 'voucher' => null];
     }
-    if (strtotime($v->expiry) < strtotime(date('Y-m-d'))) {
+    // NULL expiry = never expires
+    if (!empty($v->expiry) && strtotime($v->expiry) < strtotime(date('Y-m-d'))) {
         return ['ok' => false, 'error' => 'Voucher has expired', 'voucher' => null];
     }
-    if (isset($v->min_spend) && (float) $v->min_spend > 0 && $subtotal < (float) $v->min_spend) {
+    if ((float) ($v->min_spend ?? 0) > 0 && $subtotal < (float) $v->min_spend) {
         return ['ok' => false, 'error' => 'Minimum spend is RM ' . sprintf('%.2f', $v->min_spend), 'voucher' => null];
     }
-    if (isset($v->max_usage) && $v->max_usage !== null && $v->max_usage !== '' &&
+    if ($v->max_usage !== null && $v->max_usage !== '' &&
         (int) $v->usage_count >= (int) $v->max_usage) {
         return ['ok' => false, 'error' => 'Voucher usage limit reached', 'voucher' => null];
     }

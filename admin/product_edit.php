@@ -212,7 +212,7 @@ include '../_head.php';
     <label for="photo">Product Image</label>
     <label class="upload">
         <?= html_file('photo', 'image/*') ?>
-        <img src="/photos/<?= $p->photo ?>">
+        <img src="/photos/<?= photo_url($p->photo) ?>">
     </label>
     <?= err('photo') ?>
 

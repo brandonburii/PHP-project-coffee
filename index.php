@@ -46,8 +46,9 @@ if ($_user) {
             $points_issued    = (int) $_db->query("SELECT COALESCE(SUM(points_earned),0) FROM `order`")->fetchColumn();
             $active_vouchers  = (int) $_db->query("
                 SELECT COUNT(*) FROM voucher
-                WHERE active = 1 AND expiry >= CURDATE()
+                WHERE active = 1
                   AND (start_date IS NULL OR start_date <= CURDATE())
+                  AND (expiry IS NULL OR expiry >= CURDATE())
             ")->fetchColumn();
 
             $most_redeemed = $_db->query("
@@ -156,7 +157,8 @@ if ($_user) {
                 FROM `order` o
                 JOIN voucher v ON v.code = o.voucher_code
                 WHERE o.user_id = ? AND o.voucher_code IS NOT NULL
-                  AND v.active = 1 AND v.expiry >= CURDATE()
+                  AND v.active = 1
+                  AND (v.expiry IS NULL OR v.expiry >= CURDATE())
                 ORDER BY o.id DESC
                 LIMIT 1
             ');
@@ -466,7 +468,7 @@ include '_head.php';
                 <div class="voucher-badge"><?= encode($active_voucher->code) ?></div>
                 <p style="margin:8px 0 0; color:var(--muted); font-size:.9rem;">
                     <?= encode($active_voucher->description ?? '') ?><br>
-                    Expires <?= $active_voucher->expiry ?>
+                    <?= !empty($active_voucher->expiry) ? 'Expires ' . $active_voucher->expiry : 'Never expires' ?>
                 </p>
             <?php else: ?>
                 <p style="color:var(--muted);margin:0;">No recent active voucher. Enter a code at checkout.</p>
