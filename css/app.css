@@ -538,6 +538,27 @@ label > * {
     margin-top: 6px;
 }
 
+/* Keep multi-part controls in one grid cell so errors stay aligned */
+.form > .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.form > .form-field .field-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.form > .form-field .field-hint {
+    margin: 0;
+    font-size: .82rem;
+    color: var(--muted);
+}
+
 input[type=text],
 input[type=password],
 input[type=number],

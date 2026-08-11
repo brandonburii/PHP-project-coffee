@@ -77,7 +77,7 @@ include '../_head.php';
     </thead>
     <tbody>
         <?php foreach ($arr as $v):
-            $expired = strtotime($v->expiry) < strtotime(date('Y-m-d'));
+            $expired = !empty($v->expiry) && strtotime($v->expiry) < strtotime(date('Y-m-d'));
             $usage   = (int) ($v->usage_count ?? 0);
             $max     = $v->max_usage;
         ?>
@@ -92,11 +92,11 @@ include '../_head.php';
             </td>
             <td class="right">RM <?= sprintf('%.2f', $v->min_spend ?? 0) ?></td>
             <td>
-                <?= $v->expiry ?>
+                <?= !empty($v->expiry) ? $v->expiry : 'Never' ?>
                 <?php if ($expired): ?><span class="badge-status danger">Expired</span><?php endif ?>
             </td>
             <td class="right">
-                <?= $usage ?><?= $max !== null && $max !== '' ? ' / ' . (int) $max : '' ?>
+                <?= $usage ?><?= $max !== null && $max !== '' ? ' / ' . (int) $max : ' / ∞' ?>
             </td>
             <td>
                 <?php if ($v->active): ?>
