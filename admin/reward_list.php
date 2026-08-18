@@ -8,9 +8,19 @@ if (is_post()) {
     $btn = req('btn');
 
     if ($btn == 'toggle' && $id != '') {
+        $stm = $_db->prepare('SELECT active FROM reward WHERE id = ?');
+        $stm->execute([$id]);
+        $before_active = (int) $stm->fetchColumn();
+
         $stm = $_db->prepare('UPDATE reward SET active = 1 - active WHERE id = ?');
         $stm->execute([$id]);
-        audit('Rewards', 'Reward Toggled', "Toggled reward ID $id");
+        audit(
+            'Rewards',
+            'Reward Toggled',
+            "Toggled reward ID $id",
+            ['active' => $before_active],
+            ['active' => 1 - $before_active]
+        );
         temp('info', 'Reward status updated');
         redirect();
     }

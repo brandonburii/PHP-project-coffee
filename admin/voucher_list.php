@@ -6,9 +6,19 @@ auth('Admin');
 if (is_post()) {
     $code = req('code');
     if ($code != '' && is_exists($code, 'voucher', 'code')) {
+        $stm = $_db->prepare('SELECT active FROM voucher WHERE code = ?');
+        $stm->execute([$code]);
+        $before_active = (int) $stm->fetchColumn();
+
         $stm = $_db->prepare('UPDATE voucher SET active = 1 - active WHERE code = ?');
         $stm->execute([$code]);
-        audit('Vouchers', 'Voucher Toggled', "Toggled active status for voucher: $code");
+        audit(
+            'Vouchers',
+            'Voucher Toggled',
+            "Toggled active status for voucher: $code",
+            ['active' => $before_active],
+            ['active' => 1 - $before_active]
+        );
         temp('info', 'Voucher status updated');
     }
     redirect();

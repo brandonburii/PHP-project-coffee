@@ -25,7 +25,7 @@ include '../_head.php';
 ?>
 
 <div style="display: flex; gap: 20px; align-items: flex-start;">
-    <img src="/photos/<?= $m->photo ?>" style="width: 150px; height: 150px; object-fit: cover; border: 1px solid #ccc; border-radius: 5px;">
+    <img src="/photos/<?= photo_url($m->photo) ?>" style="width: 150px; height: 150px; object-fit: cover; border: 1px solid #ccc; border-radius: 5px;">
 
     <table class="table detail">
         <tr>

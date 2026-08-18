@@ -55,7 +55,7 @@ if (is_post()) {
         $photo_name = save_photo($photo, '../photos');
 
         // Insert into database
-        $stm = $_db->prepare('INSERT INTO user (email, password, name, photo, role) VALUES (?, SHA1(?), ?, ?, ?)');
+        $stm = $_db->prepare('INSERT INTO user (email, password, name, photo, role, active) VALUES (?, SHA1(?), ?, ?, ?, 1)');
         $stm->execute([$email, $password, $name, $photo_name, 'Member']);
 
         audit('Member', 'Registration', "New member registered: $email, Name: $name");

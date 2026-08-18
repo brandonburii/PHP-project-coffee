@@ -71,6 +71,17 @@ if (is_post()) {
     }
 
     if (!$_err) {
+        $before = [
+            'description' => $v->description,
+            'type' => $v->type,
+            'value' => (float) $v->value,
+            'min_spend' => (float) $v->min_spend,
+            'start_date' => $v->start_date,
+            'expiry' => $v->expiry,
+            'max_usage' => $v->max_usage === null ? null : (int) $v->max_usage,
+            'active' => (int) $v->active,
+        ];
+
         $max  = ($max_usage === '' || $max_usage === null) ? null : (int) $max_usage;
         $exp  = ($expiry === '' || $expiry === null) ? null : $expiry;
         $desc = ($description === '') ? null : $description;
@@ -86,7 +97,22 @@ if (is_post()) {
             $start_date, $exp, $max, $active ? 1 : 0, $code
         ]);
 
-        audit('Vouchers', 'Voucher Updated', "Updated voucher: $code ($type $value)");
+        audit(
+            'Vouchers',
+            'Voucher Updated',
+            "Updated voucher: $code ($type $value)",
+            $before,
+            [
+                'description' => $desc,
+                'type' => $type,
+                'value' => (float) $value,
+                'min_spend' => (float) $min_spend,
+                'start_date' => $start_date,
+                'expiry' => $exp,
+                'max_usage' => $max,
+                'active' => $active ? 1 : 0,
+            ]
+        );
         temp('info', 'Voucher updated successfully');
         redirect('voucher_list.php');
     }

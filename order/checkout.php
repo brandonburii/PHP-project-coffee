@@ -140,9 +140,60 @@ if (is_post()) {
 
             $_db->commit();
 
-            audit('Orders', 'Checkout completed', "Order ID $order_id | subtotal: $subtotal, discount: $discount, total: $total, points used: $points_used, earned: $earned, voucher: " . ($vcode ?? '-'));
+            $points_after = $available_points - $points_used + $earned;
+            audit(
+                'Orders',
+                'Checkout Completed',
+                "Order ID $order_id checkout completed",
+                [
+                    'order_id' => (int) $order_id,
+                    'subtotal' => (float) $subtotal,
+                    'discount' => 0.00,
+                    'total' => 0.00,
+                    'voucher_code' => null,
+                    'points_before' => (int) $available_points,
+                    'points_changed' => (int) (-$points_used + $earned),
+                    'points_after' => (int) $available_points,
+                    'reason' => 'Checkout',
+                ],
+                [
+                    'order_id' => (int) $order_id,
+                    'subtotal' => (float) $subtotal,
+                    'discount' => (float) $discount,
+                    'total' => (float) $total,
+                    'voucher_code' => $vcode,
+                    'points_before' => (int) $available_points,
+                    'points_changed' => (int) (-$points_used + $earned),
+                    'points_after' => (int) $points_after,
+                    'reason' => 'Checkout',
+                ],
+                ['keep_all' => true]
+            );
 
-            $_SESSION['user']->points = $available_points - $points_used + $earned;
+            audit(
+                'Reward Points',
+                'Points Earned/Used',
+                "Order ID $order_id points updated",
+                [
+                    'order_id' => (int) $order_id,
+                    'points_before' => (int) $available_points,
+                    'points_used' => 0,
+                    'points_earned' => 0,
+                    'points_after' => (int) $available_points,
+                    'reason' => 'Checkout',
+                ],
+                [
+                    'order_id' => (int) $order_id,
+                    'points_before' => (int) $available_points,
+                    'points_used' => (int) $points_used,
+                    'points_earned' => (int) $earned,
+                    'points_after' => (int) $points_after,
+                    'reason' => 'Checkout',
+                ],
+                ['keep_all' => true]
+            );
+
+            $_SESSION['user']->points = $points_after;
 
             set_cart();
             temp('info', 'Checkout successful');

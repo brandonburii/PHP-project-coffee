@@ -116,6 +116,20 @@ if (is_post()) {
     }
 
     if (!$_err) {
+        $before = [
+            'name' => $p->name,
+            'description' => $p->description,
+            'origin' => $p->origin,
+            'roast' => $p->roast,
+            'tag' => $p->tag,
+            'price' => (float) $p->price,
+            'sale_price' => $p->sale_price !== null ? (float) $p->sale_price : null,
+            'sale_start' => $p->sale_start,
+            'sale_end' => $p->sale_end,
+            'stock' => (int) $p->stock,
+            'photo' => $p->photo,
+        ];
+
         $photo_name = $p->photo;
 
         if ($photo) {
@@ -146,7 +160,25 @@ if (is_post()) {
             log_stock($id, 'edited', $p->stock, $stock);
         }
 
-        audit('Products', 'Product Updated', "Updated product ID: $id, Name: $name, Price: RM$price, Stock: $stock");
+        audit(
+            'Products',
+            'Product Updated',
+            "Updated product ID: $id, Name: $name, Price: RM$price, Stock: $stock",
+            $before,
+            [
+                'name' => $name,
+                'description' => $description,
+                'origin' => $origin ?: null,
+                'roast' => $roast ?: null,
+                'tag' => $tag ?: null,
+                'price' => (float) $price,
+                'sale_price' => $sale_price !== null ? (float) $sale_price : null,
+                'sale_start' => $sale_start ? date('Y-m-d H:i:s', strtotime($sale_start)) : null,
+                'sale_end' => $sale_end ? date('Y-m-d H:i:s', strtotime($sale_end)) : null,
+                'stock' => (int) $stock,
+                'photo' => $photo_name,
+            ]
+        );
 
         temp('info', 'Product updated successfully');
         redirect('product_list.php');

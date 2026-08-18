@@ -409,8 +409,84 @@ function auth(...$roles) {
 // Audit Logging
 // ============================================================================
 
-function audit($module, $action, $description = '') {
-    // Audit logging disabled
+function audit_diff($before = null, $after = null) {
+    $before = is_array($before) ? $before : (is_object($before) ? (array) $before : []);
+    $after  = is_array($after)  ? $after  : (is_object($after)  ? (array) $after  : []);
+
+    $keys = array_unique(array_merge(array_keys($before), array_keys($after)));
+    $old = [];
+    $new = [];
+
+    foreach ($keys as $k) {
+        $b = $before[$k] ?? null;
+        $a = $after[$k] ?? null;
+
+        // Compare as strings so 1 and "1" are treated equally
+        if ((string) $b !== (string) $a) {
+            $old[$k] = $b;
+            $new[$k] = $a;
+        }
+    }
+
+    return [$old, $new];
+}
+
+function client_ip() {
+    $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
+    if ($ip != '') {
+        $parts = explode(',', $ip);
+        $ip = trim($parts[0]);
+    }
+    if ($ip == '') {
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+    }
+    return $ip ?: null;
+}
+
+function audit($module, $action, $description = '', $before = null, $after = null, $options = []) {
+    global $_db, $_user;
+
+    try {
+        $keep_all = (bool) ($options['keep_all'] ?? false);
+        if ($keep_all) {
+            $old = is_array($before) ? $before : (is_object($before) ? (array) $before : []);
+            $new = is_array($after)  ? $after  : (is_object($after)  ? (array) $after  : []);
+        }
+        else {
+            [$old, $new] = audit_diff($before, $after);
+        }
+
+        $before_json = $old ? json_encode($old, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null;
+        $after_json  = $new ? json_encode($new, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) : null;
+
+        $stm = $_db->prepare('
+            INSERT INTO audit_log
+                (user_id, username, role, module, action, description, before_data, after_data, ip_address, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        ');
+        $stm->execute([
+            $_user->id   ?? null,
+            $_user->name ?? null,
+            $_user->role ?? null,
+            $module,
+            $action,
+            $description ?: null,
+            $before_json,
+            $after_json,
+            client_ip(),
+        ]);
+    }
+    catch (Exception $e) {
+        // Keep user flow working, but never silently lose accountability failures.
+        // Server-side only — do not show SQL/DB details to end users.
+        error_log(sprintf(
+            '[AUDIT FAILURE] module=%s action=%s user_id=%s: %s',
+            $module,
+            $action,
+            $_user->id ?? 'guest',
+            $e->getMessage()
+        ));
+    }
 }
 
 // ============================================================================
@@ -654,8 +730,25 @@ function voucher_discount($voucher, $subtotal) {
 // Increment voucher usage count after successful checkout
 function voucher_use($code) {
     global $_db;
+    $stm = $_db->prepare('SELECT usage_count FROM voucher WHERE code = ?');
+    $stm->execute([$code]);
+    $before = (int) $stm->fetchColumn();
+
     $stm = $_db->prepare('UPDATE voucher SET usage_count = usage_count + 1 WHERE code = ?');
     $stm->execute([$code]);
+
+    $stm = $_db->prepare('SELECT usage_count FROM voucher WHERE code = ?');
+    $stm->execute([$code]);
+    $after = (int) $stm->fetchColumn();
+
+    audit(
+        'Vouchers',
+        'Voucher Used',
+        "Voucher used at checkout: $code",
+        ['code' => $code, 'usage_count' => $before],
+        ['code' => $code, 'usage_count' => $after],
+        ['keep_all' => true]
+    );
 }
 
 // ============================================================================
@@ -686,6 +779,7 @@ function redeem_reward($reward_id) {
         $stm = $_db->prepare('SELECT points FROM user WHERE id = ? FOR UPDATE');
         $stm->execute([$_user->id]);
         $pts = (int) $stm->fetchColumn();
+        $stock_before = (int) $r->stock;
 
         if ($pts < (int) $r->points) {
             throw new Exception('Insufficient points');
@@ -706,7 +800,32 @@ function redeem_reward($reward_id) {
         $_db->commit();
 
         $_SESSION['user']->points = $pts - (int) $r->points;
-        audit('Rewards', 'Reward Redeemed', "User {$_user->id} redeemed reward {$r->id} ({$r->name}) for {$r->points} pts");
+        audit(
+            'Reward Points',
+            'Points Redeemed',
+            "Redeemed reward {$r->id} ({$r->name})",
+            [
+                'user_id' => $_user->id,
+                'reward_id' => $r->id,
+                'reward_name' => $r->name,
+                'points_before' => $pts,
+                'points_changed' => -(int) $r->points,
+                'points_after' => $pts - (int) $r->points,
+                'reward_stock' => $stock_before,
+                'reason' => 'Reward redemption',
+            ],
+            [
+                'user_id' => $_user->id,
+                'reward_id' => $r->id,
+                'reward_name' => $r->name,
+                'points_before' => $pts,
+                'points_changed' => -(int) $r->points,
+                'points_after' => $pts - (int) $r->points,
+                'reward_stock' => $stock_before - 1,
+                'reason' => 'Reward redemption',
+            ],
+            ['keep_all' => true]
+        );
         return ['ok' => true, 'error' => null, 'reward' => $r];
     }
     catch (Exception $e) {

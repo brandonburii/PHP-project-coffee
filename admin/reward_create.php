@@ -51,7 +51,22 @@ if (is_post()) {
         ');
         $stm->execute([$name, $description, $photo_name, $points, $stock, $active ? 1 : 0, $sort_order]);
 
-        audit('Rewards', 'Reward Created', "Created reward: $name ($points pts)");
+        $new_id = (int) $_db->lastInsertId();
+        audit(
+            'Rewards',
+            'Reward Created',
+            "Created reward: $name ($points pts)",
+            null,
+            [
+                'id' => $new_id,
+                'name' => $name,
+                'description' => $description,
+                'points' => (int) $points,
+                'stock' => (int) $stock,
+                'active' => $active ? 1 : 0,
+                'sort_order' => (int) $sort_order,
+            ]
+        );
         temp('info', 'Reward created successfully');
         redirect('reward_list.php');
     }

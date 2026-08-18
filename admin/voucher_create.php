@@ -110,7 +110,24 @@ if (is_post()) {
                 $code, $desc, $type, $value, $min_spend, $start_date, $exp, $max, $active ? 1 : 0
             ]);
 
-            audit('Vouchers', 'Voucher Created', "Created voucher: $code ($type $value)");
+            audit(
+                'Vouchers',
+                'Voucher Created',
+                "Created voucher: $code ($type $value)",
+                null,
+                [
+                    'code' => $code,
+                    'description' => $desc,
+                    'type' => $type,
+                    'value' => (float) $value,
+                    'min_spend' => (float) $min_spend,
+                    'start_date' => $start_date,
+                    'expiry' => $exp,
+                    'max_usage' => $max,
+                    'usage_count' => 0,
+                    'active' => $active ? 1 : 0,
+                ]
+            );
             temp('info', 'Voucher created successfully');
             redirect('voucher_list.php');
         }

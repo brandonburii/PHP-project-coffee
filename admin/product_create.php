@@ -128,7 +128,25 @@ if (is_post()) {
 
         log_stock($id, 'added', 0, $stock);
 
-        audit('Products', 'Product Created', "Created product ID: $id, Name: $name, Price: RM$price, Stock: $stock");
+        audit(
+            'Products',
+            'Product Created',
+            "Created product ID: $id, Name: $name, Price: RM$price, Stock: $stock",
+            null,
+            [
+                'id' => $id,
+                'name' => $name,
+                'description' => $description,
+                'origin' => $origin ?: null,
+                'roast' => $roast ?: null,
+                'tag' => $tag ?: null,
+                'price' => (float) $price,
+                'sale_price' => $sale_price !== null ? (float) $sale_price : null,
+                'sale_start' => $sale_start ? date('Y-m-d H:i:s', strtotime($sale_start)) : null,
+                'sale_end' => $sale_end ? date('Y-m-d H:i:s', strtotime($sale_end)) : null,
+                'stock' => (int) $stock,
+            ]
+        );
 
         temp('info', 'Product created successfully');
         redirect('product_list.php');

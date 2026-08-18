@@ -183,6 +183,26 @@ INSERT INTO `setting` (`key`, `value`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `audit_log`
+--
+
+CREATE TABLE `audit_log` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `username` varchar(100) DEFAULT NULL,
+  `role` varchar(100) DEFAULT NULL,
+  `module` varchar(100) NOT NULL,
+  `action` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `before_data` longtext DEFAULT NULL,
+  `after_data` longtext DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `stock_history`
 --
 
@@ -230,18 +250,20 @@ CREATE TABLE `user` (
   `name` varchar(100) NOT NULL,
   `photo` varchar(100) NOT NULL,
   `role` varchar(100) NOT NULL,
-  `points` int(11) NOT NULL DEFAULT 0
+  `points` int(11) NOT NULL DEFAULT 0,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `user`
 --
 
-INSERT INTO `user` (`id`, `email`, `password`, `name`, `photo`, `role`, `points`) VALUES
-(1, '1@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Lisa Manobal', '1.jpg', 'Admin', 0),
-(2, '2@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Kim Jisoo', '2.jpg', 'Member', 250),
-(3, '3@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Kim Jennie', '3.jpg', 'Member', 0),
-(4, '4@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Roseanne Park', '4.jpg', 'Member', 0);
+INSERT INTO `user` (`id`, `email`, `password`, `name`, `photo`, `role`, `points`, `active`, `created_at`) VALUES
+(1, '1@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Lisa Manobal', '1.jpg', 'Admin', 0, 1, NOW()),
+(2, '2@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Kim Jisoo', '2.jpg', 'Member', 250, 1, NOW()),
+(3, '3@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Kim Jennie', '3.jpg', 'Member', 0, 1, NOW()),
+(4, '4@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Roseanne Park', '4.jpg', 'Member', 0, 1, NOW());
 
 -- --------------------------------------------------------
 
@@ -273,6 +295,16 @@ INSERT INTO `voucher` (`code`, `description`, `type`, `value`, `min_spend`, `sta
 --
 -- Indexes for dumped tables
 --
+
+--
+-- Indexes for table `audit_log`
+--
+ALTER TABLE `audit_log`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `module` (`module`),
+  ADD KEY `action` (`action`),
+  ADD KEY `created_at` (`created_at`);
 
 --
 -- Indexes for table `cart`
@@ -353,6 +385,12 @@ ALTER TABLE `voucher`
 --
 
 --
+-- AUTO_INCREMENT for table `audit_log`
+--
+ALTER TABLE `audit_log`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `order`
 --
 ALTER TABLE `order`
@@ -385,6 +423,12 @@ ALTER TABLE `user`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `audit_log`
+--
+ALTER TABLE `audit_log`
+  ADD CONSTRAINT `audit_log_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `cart`

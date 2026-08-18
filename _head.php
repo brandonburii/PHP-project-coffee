@@ -30,11 +30,13 @@
             <?php if ($_user?->role == 'Admin'): ?>
                 <a href="/" class="<?= is_active('/') ?>"><?= icon('dashboard') ?><span>Dashboard</span></a>
                 <a href="/admin/member_list.php" class="<?= is_active('/admin/member_list.php') ?>"><?= icon('members') ?><span>Member Maintenance</span></a>
+                <a href="/admin/admin_list.php" class="<?= is_active('/admin/admin_list.php') ?>"><?= icon('members') ?><span>Admin Management</span></a>
                 <a href="/admin/product_list.php" class="<?= is_active('/admin/product_list.php') ?>"><?= icon('products') ?><span>Product Maintenance</span></a>
                 <a href="/admin/stock_history.php" class="<?= is_active('/admin/stock_history.php') ?>"><?= icon('stock') ?><span>Stock History</span></a>
                 <a href="/admin/voucher_list.php" class="<?= is_active('/admin/voucher_list.php') ?>"><?= icon('voucher') ?><span>Voucher Maintenance</span></a>
                 <a href="/admin/reward_list.php" class="<?= is_active('/admin/reward_list.php') ?>"><?= icon('rewards') ?><span>Reward Maintenance</span></a>
                 <a href="/order/history.php" class="<?= is_active('/order/history.php') ?>"><?= icon('orders') ?><span>Order Management</span></a>
+                <a href="/admin/audit_log.php" class="<?= is_active('/admin/audit_log.php') ?>"><?= icon('reports') ?><span>Audit Log</span></a>
                 <a href="/admin/reports.php" class="<?= is_active('/admin/reports.php') ?>"><?= icon('reports') ?><span>Sales Reports</span></a>
                 <a href="/user/profile.php" class="<?= is_active('/user/profile.php') ?>"><?= icon('profile') ?><span>Profile</span></a>
                 <a href="/logout.php"><?= icon('logout') ?><span>Logout</span></a>
