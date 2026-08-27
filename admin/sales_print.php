@@ -18,16 +18,7 @@ $monthly = $_db->query("
     ORDER BY period ASC
 ")->fetchAll();
 
-$top = $_db->query("
-    SELECT p.id, p.name,
-           COALESCE(SUM(i.unit), 0) AS units_sold,
-           COALESCE(SUM(i.subtotal), 0) AS revenue
-    FROM product p
-    JOIN item i ON i.product_id = p.id
-    GROUP BY p.id, p.name
-    ORDER BY units_sold DESC
-    LIMIT 10
-")->fetchAll();
+$top = top_selling_products(10);
 
 audit('Admin', 'Viewed Sales Print Report', 'Opened printable sales summary');
 ?>

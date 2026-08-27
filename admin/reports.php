@@ -65,16 +65,7 @@ $monthly = $_db->query("
 ")->fetchAll();
 
 // Top products by units sold
-$top_products = $_db->query("
-    SELECT p.id, p.name, p.photo,
-           COALESCE(SUM(i.unit), 0) AS units_sold,
-           COALESCE(SUM(i.subtotal), 0) AS revenue
-    FROM product p
-    LEFT JOIN item i ON i.product_id = p.id
-    GROUP BY p.id, p.name, p.photo
-    ORDER BY units_sold DESC
-    LIMIT 5
-")->fetchAll();
+$top_products = top_selling_products(5);
 
 // Max revenue for simple bar scaling
 $daily_max   = 0;

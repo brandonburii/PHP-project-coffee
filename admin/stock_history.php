@@ -3,17 +3,14 @@ include '../_base.php';
 
 // Authorization check (Admin only)
 auth('Admin');
-
-// Get sorting, searching and pagination parameters
+// Get sorting, searching and pagination parameters for user orders
 $fields = [
-    'id'         => 'ID',
-    'created_at' => 'Timestamp',
-    'product_id' => 'Product',
-    'action'     => 'Action',
-    'old_stock'  => 'Old',
-    'new_stock'  => 'New',
-    'change_qty' => 'Change',
-    'username'   => 'User',
+    'id'       => 'ID',
+    'datetime' => 'Timestamp',
+    'items'    => 'Items',
+    'total'    => 'Total',
+    'status'   => 'Status',
+    'username' => 'User',
 ];
 
 $sort = req('sort', 'id');
@@ -22,27 +19,22 @@ if (!array_key_exists($sort, $fields)) $sort = 'id';
 if ($dir != 'asc' && $dir != 'desc') $dir = 'desc';
 
 $search = req('search');
-$action = req('action');
+$status = req('status');
 
-// Search and paging query
+// Query user orders
 $params = [];
-$query = '
-    SELECT h.*, p.name AS product_name
-    FROM stock_history h
-    LEFT JOIN product p ON h.product_id = p.id
-    WHERE 1=1
-';
+$query = "SELECT o.*, u.name AS username, (SELECT COUNT(*) FROM item it WHERE it.order_id = o.id) AS items FROM `order` o LEFT JOIN user u ON o.user_id = u.id WHERE 1=1";
 if ($search != '') {
-    $query .= ' AND (h.product_id LIKE ? OR p.name LIKE ? OR h.username LIKE ?)';
+    $query .= ' AND (o.id LIKE ? OR u.name LIKE ? OR o.voucher_code LIKE ?)';
     $params[] = "%$search%";
     $params[] = "%$search%";
     $params[] = "%$search%";
 }
-if ($action != '' && in_array($action, ['added', 'edited', 'sold'])) {
-    $query .= ' AND h.action = ?';
-    $params[] = $action;
+if ($status != '' && in_array($status, ['completed','cancelled','refunded','pending'])) {
+    $query .= ' AND o.status = ?';
+    $params[] = $status;
 }
-$query .= " ORDER BY h.$sort $dir";
+$query .= " ORDER BY o.$sort $dir";
 
 $limit = 10;
 $page = req('page', 1);
@@ -53,21 +45,22 @@ $arr = $pager->result;
 
 $_breadcrumbs = [
     'Dashboard' => '/',
-    'Stock History' => '',
+    'Order History' => '',
 ];
-$_title = 'Admin | Stock History';
+$_title = 'Admin | Order History';
 include '../_head.php';
 ?>
 
 <form method="get" class="search-form">
     <label for="search">Search:</label>
-    <?= html_search('search', 'placeholder="Product ID, name, or user"') ?>
+    <?= html_search('search', 'placeholder="Order ID, user, or voucher"') ?>
 
-    <label for="action">Action:</label>
-    <?= html_select('action', [
-        'added'  => 'Added',
-        'edited' => 'Edited',
-        'sold'   => 'Sold',
+    <label for="status">Status:</label>
+    <?= html_select('status', [
+        'pending'   => 'Pending',
+        'completed' => 'Completed',
+        'cancelled' => 'Cancelled',
+        'refunded'  => 'Refunded',
     ], '- All -') ?>
 
     <button>Search</button>
@@ -78,52 +71,42 @@ include '../_head.php';
 <?php if (empty($arr)): ?>
     <div class="empty-state">
         <span class="emoji">📦</span>
-        <p class="title">No stock movements found</p>
-        <p class="hint">Stock changes from create, edit, and sales will appear here.</p>
+        <p class="title">No orders found</p>
+        <p class="hint">Orders placed by users will appear here.</p>
     </div>
 <?php else: ?>
-<table class="table">
-    <thead>
-        <tr>
-            <?php table_headers($fields, $sort, $dir, 'search=' . urlencode($search) . '&action=' . urlencode($action)); ?>
-        </tr>
-    </thead>
-    <tbody>
-        <?php foreach ($arr as $h): ?>
-        <tr>
-            <td><?= $h->id ?></td>
-            <td><?= $h->created_at ?></td>
-            <td>
-                <a href="product_edit.php?id=<?= urlencode($h->product_id) ?>">
-                    <?= encode($h->product_id) ?>
-                </a>
-                <?php if ($h->product_name): ?>
-                    <div style="color:var(--muted); font-size:.82rem;"><?= encode($h->product_name) ?></div>
-                <?php endif ?>
-            </td>
-            <td>
-                <?php if ($h->action == 'added'): ?>
-                    <span class="badge-status success">Added</span>
-                <?php elseif ($h->action == 'edited'): ?>
-                    <span class="badge-status process">Edited</span>
-                <?php else: ?>
-                    <span class="badge-status danger">Sold</span>
-                <?php endif ?>
-            </td>
-            <td class="right"><?= $h->old_stock ?></td>
-            <td class="right"><?= $h->new_stock ?></td>
-            <td class="right" style="color: <?= $h->change_qty < 0 ? 'var(--red)' : 'var(--green)' ?>; font-weight:600;">
-                <?= $h->change_qty > 0 ? '+' : '' ?><?= $h->change_qty ?>
-            </td>
-            <td><?= $h->username ? encode($h->username) : '—' ?></td>
-        </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
+    <table class="table">
+        <thead>
+            <tr>
+                <?php table_headers($fields, $sort, $dir, 'search=' . urlencode($search) . '&status=' . urlencode($status)); ?>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php foreach ($arr as $h): ?>
+            <tr>
+                <td><?= $h->id ?></td>
+                <td><?= $h->datetime ?></td>
+                <td class="right"><?= $h->items ?></td>
+                <td class="right">RM <?= sprintf('%.2f', $h->total) ?></td>
+                <td>
+                    <?php if ($h->status == 'cancelled'): ?>
+                        <span class="badge-status danger">Cancelled</span>
+                    <?php elseif ($h->status == 'refunded'): ?>
+                        <span class="badge-status neutral">Refunded</span>
+                    <?php else: ?>
+                        <span class="badge-status success"><?= encode(ucfirst($h->status)) ?></span>
+                    <?php endif ?>
+                </td>
+                <td><?= encode($h->username ?? 'Guest') ?></td>
+                <td><a href="/order/detail.php?id=<?= urlencode($h->id) ?>">Details</a></td>
+            </tr>
+            <?php endforeach; ?>
+        </tbody>
+    </table>
 <?php endif; ?>
 
 <br>
-<?php $pager->html('sort=' . urlencode($sort) . '&dir=' . urlencode($dir) . '&search=' . urlencode($search) . '&action=' . urlencode($action)); ?>
+<?php $pager->html('sort=' . urlencode($sort) . '&dir=' . urlencode($dir) . '&search=' . urlencode($search) . '&status=' . urlencode($status)); ?>
 
-<?php
-include '../_foot.php';
+<?php include '../_foot.php';
