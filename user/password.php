@@ -1,41 +1,30 @@
 <?php
 include '../_base.php';
 
+// Secure the page
+$email = $_SESSION['reset_email'] ?? '';
+$verified = $_SESSION['otp_verified'] ?? false;
+
+if (!$email || !$verified) {
+    temp('err', 'Unauthorized access to password reset.');
+    redirect('../login.php'); // Relative path
+}
+
 // ----------------------------------------------------------------------------
 
-auth();
-
 if (is_post()) {
-    $current  = req('current');
     $password = req('password');
-    $confirm  = req('confirm');
+    $confirm = req('confirm');
 
-    // Validate: current password
-    if ($current == '') {
-        $_err['current'] = 'Required';
-    }
-    else {
-        $stm = $_db->prepare('SELECT password FROM user WHERE id = ?');
-        $stm->execute([$_user->id]);
-        $real_password = $stm->fetchColumn();
-
-        if (sha1($current) !== $real_password) {
-            $_err['current'] = 'Incorrect password';
-        }
-    }
-
-    // Validate: new password
+    // Validate password
     if ($password == '') {
         $_err['password'] = 'Required';
     }
     else if (strlen($password) < 6) {
         $_err['password'] = 'Min 6 characters';
     }
-    else if ($password == $current) {
-        $_err['password'] = 'Cannot be same as current password';
-    }
 
-    // Validate: confirm password
+    // Validate confirm password
     if ($confirm == '') {
         $_err['confirm'] = 'Required';
     }
@@ -44,40 +33,95 @@ if (is_post()) {
     }
 
     if (!$_err) {
-        $stm = $_db->prepare('UPDATE user SET password = SHA1(?) WHERE id = ?');
-        $stm->execute([$password, $_user->id]);
+        // 1. Update the password
+        $stm = $_db->prepare('UPDATE user SET password = SHA1(?) WHERE email = ?');
+        $stm->execute([$password, $email]);
 
-        audit('Auth', 'Password Change', "Changed password successfully");
+        // 2. Fetch User ID to clear tokens
+        $stm = $_db->prepare('SELECT id FROM user WHERE email = ?');
+        $stm->execute([$email]);
+        $u_id = $stm->fetchColumn();
 
-        temp('info', 'Password updated successfully');
-        redirect('/');
+        // 3. Delete the used OTP token
+        $stm = $_db->prepare('DELETE FROM token WHERE user_id = ?');
+        $stm->execute([$u_id]);
+
+        // 4. Destroy the reset session variables for security
+        unset($_SESSION['reset_email']);
+        unset($_SESSION['otp_verified']);
+
+        audit('Auth', 'Password Reset', "Password successfully reset for: $email");
+
+        temp('info', 'Password has been updated successfully. Please login.');
+        redirect('../login.php'); // Relative path
     }
 }
 
 // ----------------------------------------------------------------------------
 
-$_title = 'User | Password';
+$_title = 'User | Set New Password';
 include '../_head.php';
 ?>
 
-<form method="post" class="form">
-    <label for="current">Current Password</label>
-    <?= html_password('current', 'maxlength="100"') ?>
-    <?= err('current') ?>
+<!-- Load Alpine.js for real-time reactivity -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
-    <label for="password">New Password</label>
-    <?= html_password('password', 'maxlength="100"') ?>
-    <?= err('password') ?>
+<div class="auth-card" x-data="resetPasswordForm()">
+    <div class="auth-card-head">
+        <h2>Set New Password</h2>
+        <p>Create a secure password for your account.</p>
+    </div>
 
-    <label for="confirm">Confirm Password</label>
-    <?= html_password('confirm', 'maxlength="100"') ?>
-    <?= err('confirm') ?>
+    <form method="post" class="form auth-form">
+        
+        <label for="password">New Password <span class="req">*</span></label>
+        <?= html_password('password', 'x-model="password" @input="validatePassword" maxlength="20" required placeholder="Min. 6 characters"') ?>
+        <?= err('password') ?>
+        <span class="err" x-show="errors.password" x-text="errors.password" style="display: none; color: red;"></span>
 
-    <section>
-        <button>Change Password</button>
-        <button type="reset">Reset</button>
-    </section>
-</form>
+        <label for="confirm">Confirm Password <span class="req">*</span></label>
+        <?= html_password('confirm', 'x-model="confirm" @input="validateConfirm" maxlength="20" required placeholder="Re-enter password"') ?>
+        <?= err('confirm') ?>
+        <span class="err" x-show="errors.confirm" x-text="errors.confirm" style="display: none; color: red;"></span>
+
+        <section style="margin-top: 24px;">
+            <button :disabled="Object.keys(errors).length > 0" :style="Object.keys(errors).length > 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''">Save Password</button>
+        </section>
+    </form>
+</div>
+
+<!-- Alpine.js Logic -->
+<script>
+function resetPasswordForm() {
+    return {
+        password: '',
+        confirm: '',
+        errors: {},
+
+        validatePassword() {
+            if (this.password === '') {
+                this.errors.password = 'Required';
+            } else if (this.password.length < 6) {
+                this.errors.password = 'Min 6 characters';
+            } else {
+                delete this.errors.password;
+            }
+            if (this.confirm !== '') this.validateConfirm();
+        },
+
+        validateConfirm() {
+            if (this.confirm === '') {
+                this.errors.confirm = 'Required';
+            } else if (this.confirm !== this.password) {
+                this.errors.confirm = 'Passwords do not match';
+            } else {
+                delete this.errors.confirm;
+            }
+        }
+    }
+}
+</script>
 
 <?php
 include '../_foot.php';
+?>
