@@ -19,7 +19,7 @@
         <?php if ($_user): ?>
             <div class="user-info" style="display: flex; align-items: center; gap: 10px;">
                 <span>Welcome, <b><?= encode($_user->name) ?></b> (<?= $_user->role ?>)</span>
-                <img src="/photos/<?= $_user->photo ?>" class="avatar" style="width: 36px; height: 36px; border-radius: 5px; border: 1px solid #333; object-fit: cover;">
+                <img src="<?= photo_src($_user->photo) ?>" class="avatar" style="width: 36px; height: 36px; border-radius: 5px; border: 1px solid #333; object-fit: cover;">
                 <a href="/logout.php" style="color: #F5F1E8; text-decoration: underline; font-weight: bold;">Logout</a>
             </div>
         <?php endif ?>

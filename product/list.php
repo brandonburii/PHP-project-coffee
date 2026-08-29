@@ -153,7 +153,7 @@ include '../_head.php';
                 <?php if ($on_sale && $in_stock): ?>
                     <span class="badge sale-badge">SALE</span>
                 <?php endif ?>
-                <img src="/photos/<?= $img ?>"
+                <img src="<?= photo_src($img) ?>"
                      alt="<?= encode($p->name) ?>"
                      data-get="/product/detail.php?id=<?= $p->id ?>">
             </div>

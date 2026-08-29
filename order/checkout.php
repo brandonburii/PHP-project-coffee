@@ -78,9 +78,11 @@ include '../_head.php';
         <div class="checkout-list">
             <?php foreach ($items as $it):
                 $p = $it->product;
+                $img = photo_url($p->photo);
+                $imgFolder = is_file(__DIR__ . '/../products/' . $img) ? '/products/' : '/photos/';
             ?>
             <article class="checkout-item">
-                <img src="/photos/<?= photo_url($p->photo) ?>" alt="<?= encode($p->name) ?>">
+                <img src="<?= $imgFolder . rawurlencode($img) ?>" alt="<?= encode($p->name) ?>">
                 <div class="checkout-item-info">
                     <h3><?= encode($p->name) ?></h3>
                     <p>Qty <?= (int) $it->unit ?> · RM <?= sprintf('%.2f', $it->price) ?> each</p>
@@ -170,14 +172,6 @@ $(() => {
     }
 
     $('#code, #points').on('input change', () => {
-        clearTimeout(timer);
-        timer = setTimeout(preview, 280);
-    });
-});
-</script>
-
-<?php include '../_foot.php';
-?>
         clearTimeout(timer);
         timer = setTimeout(preview, 280);
     });

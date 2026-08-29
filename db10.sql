@@ -112,16 +112,16 @@ CREATE TABLE `product` (
 --
 
 INSERT INTO `product` (`id`, `name`, `price`, `sale_price`, `sale_start`, `sale_end`, `photo`, `description`, `origin`, `roast`, `tag`, `stock`) VALUES
-('P001', 'Ethiopia Yirgacheffe', 25.00, NULL, NULL, NULL, 'ethiopia.jpg', 'Specialty coffee beans with floral and citrus notes.', NULL, NULL, NULL, 5),
-('P002', 'Colombia Supremo', 22.00, NULL, NULL, NULL, 'colombia.jpg', 'Rich, full-bodied coffee beans with sweet caramel undertones.', NULL, NULL, NULL, 19),
-('P003', 'Brazil Santos', 18.00, NULL, NULL, NULL, 'brazil.jpg', 'Smooth, low-acid coffee beans with nutty chocolate notes.', NULL, NULL, NULL, 25),
-('P004', 'House Blend', 20.00, NULL, NULL, NULL, 'house_blend.jpg', 'Signature blend of premium beans for a balanced daily cup.', NULL, NULL, NULL, 30),
-('P005', 'Matcha', 35.00, NULL, NULL, NULL, 'matcha.jpg', 'Premium ceremonial grade green tea powder from Uji, Japan.', NULL, NULL, NULL, 12),
-('P006', 'Earl Grey', 15.00, NULL, NULL, NULL, 'earl_grey.jpg', 'Classic black tea infused with natural bergamot oil.', NULL, NULL, NULL, 40),
-('P007', 'Jasmine Green Tea', 16.00, NULL, NULL, NULL, 'jasmine.jpg', 'Fragrant green tea scented with fresh jasmine blossoms.', NULL, NULL, NULL, 35),
-('P008', 'French Press', 45.00, NULL, NULL, NULL, 'french_press.jpg', 'Double-walled stainless steel press, 8-cup capacity.', NULL, NULL, NULL, 10),
-('P009', 'V60 Dripper', 28.00, NULL, NULL, NULL, 'v60.jpg', 'Ceramic coffee dripper for precise pour-over brewing.', NULL, NULL, NULL, 15),
-('P010', 'Coffee Mug', 12.00, NULL, NULL, NULL, 'mug.jpg', 'Ceramic matte-finish mug with comfortable grip.', NULL, NULL, NULL, 50);
+('P001', 'Ethiopia Yirgacheffe', 25.00, NULL, NULL, NULL, '1.jpg', 'Specialty coffee beans with floral and citrus notes.', NULL, NULL, NULL, 5),
+('P002', 'Colombia Supremo', 22.00, NULL, NULL, NULL, '2.jpg', 'Rich, full-bodied coffee beans with sweet caramel undertones.', NULL, NULL, NULL, 19),
+('P003', 'Brazil Santos', 18.00, NULL, NULL, NULL, '3.jpg', 'Smooth, low-acid coffee beans with nutty chocolate notes.', NULL, NULL, NULL, 25),
+('P004', 'House Blend', 20.00, NULL, NULL, NULL, '4.jpg', 'Signature blend of premium beans for a balanced daily cup.', NULL, NULL, NULL, 30),
+('P005', 'Matcha', 35.00, NULL, NULL, NULL, '1.jpg', 'Premium ceremonial grade green tea powder from Uji, Japan.', NULL, NULL, NULL, 12),
+('P006', 'Earl Grey', 15.00, NULL, NULL, NULL, '2.jpg', 'Classic black tea infused with natural bergamot oil.', NULL, NULL, NULL, 40),
+('P007', 'Jasmine Green Tea', 16.00, NULL, NULL, NULL, '3.jpg', 'Fragrant green tea scented with fresh jasmine blossoms.', NULL, NULL, NULL, 35),
+('P008', 'French Press', 45.00, NULL, NULL, NULL, '4.jpg', 'Double-walled stainless steel press, 8-cup capacity.', NULL, NULL, NULL, 10),
+('P009', 'V60 Dripper', 28.00, NULL, NULL, NULL, '1.jpg', 'Ceramic coffee dripper for precise pour-over brewing.', NULL, NULL, NULL, 15),
+('P010', 'Coffee Mug', 12.00, NULL, NULL, NULL, '2.jpg', 'Ceramic matte-finish mug with comfortable grip.', NULL, NULL, NULL, 50);
 
 -- --------------------------------------------------------
 
@@ -166,10 +166,10 @@ ALTER TABLE `order`
 --
 
 INSERT INTO `reward` (`id`, `name`, `description`, `photo`, `points`, `stock`, `active`, `sort_order`) VALUES
-(1, 'Signature Latte', 'A free signature latte of your choice.', '0.jpg', 500, 50, 1, 1),
-(2, 'Matcha Latte', 'Redeem a refreshing matcha latte.', '0.jpg', 800, 30, 1, 2),
-(3, 'Cheesecake Slice', 'One slice of our house cheesecake.', '0.jpg', 1200, 20, 1, 3),
-(4, 'Coffee Tumbler', 'Branded specialty coffee tumbler.', '0.jpg', 2500, 10, 1, 4);
+(1, 'Signature Latte', 'A free signature latte of your choice.', 'Signature Latte.jpg.png', 500, 50, 1, 1),
+(2, 'Matcha Latte', 'Redeem a refreshing matcha latte.', 'Matcha Latte.jpg.png', 800, 30, 1, 2),
+(3, 'Cheesecake Slice', 'One slice of our house cheesecake.', 'Cheesecake Slice.jpg.png', 1200, 20, 1, 3),
+(4, 'Coffee Tumbler', 'Branded specialty coffee tumbler.', 'Coffee Tumbler.jpg.png', 2500, 10, 1, 4);
 
 -- --------------------------------------------------------
 

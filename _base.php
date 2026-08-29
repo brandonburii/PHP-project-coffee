@@ -106,11 +106,54 @@ function photo_url($photo, $fallback = '0.jpg') {
     if ($photo == '' || $photo == 'null') {
         return $fallback;
     }
-    $path = __DIR__ . '/photos/' . $photo;
-    if (!is_file($path)) {
-        return $fallback;
+    // Check in products folder first, then photos folder
+    $path = __DIR__ . '/products/' . $photo;
+    if (is_file($path)) {
+        return $photo;
     }
-    return $photo;
+    $path = __DIR__ . '/photos/' . $photo;
+    if (is_file($path)) {
+        return $photo;
+    }
+    return $fallback;
+}
+
+// Return the web path of a photo, checking products/ then photos/ folders
+function photo_src($photo, $fallback = '0.jpg') {
+    $photo = trim((string) $photo);
+    if ($photo != '' && $photo != 'null') {
+        if (is_file(__DIR__ . '/products/' . $photo)) {
+            return '/products/' . rawurlencode($photo);
+        }
+        if (is_file(__DIR__ . '/photos/' . $photo)) {
+            return '/photos/' . rawurlencode($photo);
+        }
+    }
+    return '/photos/' . $fallback;
+}
+
+// Get all product images by product name
+function get_product_images($product_name) {
+    $product_name = trim((string) $product_name);
+    if ($product_name == '') {
+        return [];
+    }
+    
+    $folder = __DIR__ . '/products/';
+    $images = [];
+    
+    if (is_dir($folder)) {
+        $files = scandir($folder);
+        foreach ($files as $file) {
+            // Match files that start with product name (case-insensitive)
+            if (stripos($file, $product_name) === 0) {
+                $images[] = $file;
+            }
+        }
+    }
+    
+    sort($images);
+    return $images;
 }
 
 // Is money?
@@ -1107,36 +1150,59 @@ function is_order_cancellable($order_id) {
         $stm = $_db->prepare('SELECT status FROM `order` WHERE id = ?');
         $stm->execute([$order_id]);
         $s = $stm->fetchColumn();
-        return $s !== 'cancelled' && $s !== 'refunded';
+        // User may request cancellation only while order is still 'completed'
+        // ('pending' = awaiting admin approval, 'cancelled'/'refunded' = final)
+        return $s !== false ? $s === 'completed' : true;
     } catch (Exception $e) {
         return true; // If we can't read status, assume cancellable to avoid blocking user
     }
 }
 
-function cancel_order($order_id, $reason = null) {
+// (User) Request order cancellation — status becomes 'pending' until admin approves
+function request_cancel_order($order_id, $reason = null) {
+    global $_db, $_user;
+
+    $stm = $_db->prepare('SELECT * FROM `order` WHERE id = ?');
+    $stm->execute([$order_id]);
+    $o = $stm->fetch();
+    if (!$o) return ['ok' => false, 'error' => 'Order not found'];
+    if (($o->status ?? 'completed') !== 'completed') {
+        return ['ok' => false, 'error' => 'Order cannot be cancelled'];
+    }
+
+    $cancel_reason = $reason ? substr($reason, 0, 255) : null;
+    $stm = $_db->prepare('UPDATE `order` SET status = ?, cancelled_at = NOW(), cancelled_by = ?, cancel_reason = ? WHERE id = ?');
+    $stm->execute(['pending', $_user->id ?? null, $cancel_reason, $order_id]);
+
+    audit('Orders', 'Cancellation Requested', "Order $order_id cancellation requested by " . ($_user->id ?? 'system') . ($reason ? " Reason: $reason" : ''));
+    return ['ok' => true];
+}
+
+// (Admin) Approve a cancellation — restock items and refund points.
+// Works on a 'pending' request (approval) or directly on a 'completed' order (admin instant cancel).
+function approve_cancel_order($order_id) {
     global $_db, $_user;
 
     $stm = $_db->prepare('SELECT * FROM `order` WHERE id = ? FOR UPDATE');
     $stm->execute([$order_id]);
     $o = $stm->fetch();
     if (!$o) return ['ok' => false, 'error' => 'Order not found'];
-    if ($o->status === 'cancelled') return ['ok' => false, 'error' => 'Order already cancelled'];
+    if (!in_array(($o->status ?? ''), ['pending', 'completed'])) {
+        return ['ok' => false, 'error' => 'Order cannot be cancelled'];
+    }
 
     try {
         $_db->beginTransaction();
 
-        // Mark order as cancelled
-        $cancel_by = $_user->id ?? null;
-        $cancel_reason = $reason ? substr($reason, 0, 255) : null;
-        $upd = $_db->prepare('UPDATE `order` SET status = ?, cancelled_at = NOW(), cancelled_by = ?, cancel_reason = ? WHERE id = ?');
-        $upd->execute(['cancelled', $cancel_by, $cancel_reason, $order_id]);
+        // Mark order as cancelled (approved by admin)
+        $upd = $_db->prepare('UPDATE `order` SET status = ?, cancelled_at = NOW(), cancelled_by = ? WHERE id = ?');
+        $upd->execute(['cancelled', $_user->id ?? null, $order_id]);
 
         // Restock items and log stock history
         $stm = $_db->prepare('SELECT * FROM item WHERE order_id = ?');
         $stm->execute([$order_id]);
         $items = $stm->fetchAll();
         foreach ($items as $it) {
-            // get current stock
             $pstm = $_db->prepare('SELECT stock FROM product WHERE id = ? FOR UPDATE');
             $pstm->execute([$it->product_id]);
             $old = (int) $pstm->fetchColumn();
@@ -1146,7 +1212,7 @@ function cancel_order($order_id, $reason = null) {
             log_stock($it->product_id, 'edited', $old, $new);
         }
 
-        // Optionally refund points used (simple restore)
+        // Refund points used (simple restore)
         if (!empty($o->points_used)) {
             $ust = $_db->prepare('UPDATE user SET points = points + ? WHERE id = ?');
             $ust->execute([(int)$o->points_used, $o->user_id]);
@@ -1154,7 +1220,7 @@ function cancel_order($order_id, $reason = null) {
 
         $_db->commit();
 
-        audit('Orders', 'Order Cancelled', "Order $order_id cancelled by " . ($_user->id ?? 'system') . ($reason ? " Reason: $reason" : ''));
+        audit('Orders', 'Cancellation Approved', "Order $order_id cancellation approved by " . ($_user->id ?? 'system'));
         return ['ok' => true];
     }
     catch (Exception $e) {
@@ -1163,16 +1229,74 @@ function cancel_order($order_id, $reason = null) {
     }
 }
 
+// (Admin) Reject a pending cancellation — restore order to 'completed'
+function reject_cancel_order($order_id) {
+    global $_db, $_user;
+
+    $stm = $_db->prepare('SELECT * FROM `order` WHERE id = ?');
+    $stm->execute([$order_id]);
+    $o = $stm->fetch();
+    if (!$o) return ['ok' => false, 'error' => 'Order not found'];
+    if (($o->status ?? '') !== 'pending') return ['ok' => false, 'error' => 'Order is not pending cancellation'];
+
+    $stm = $_db->prepare('UPDATE `order` SET status = ?, cancelled_at = NULL, cancelled_by = NULL, cancel_reason = NULL WHERE id = ?');
+    $stm->execute(['completed', $order_id]);
+
+    audit('Orders', 'Cancellation Rejected', "Order $order_id cancellation rejected by " . ($_user->id ?? 'system'));
+    return ['ok' => true];
+}
+
 // ============================================================================
-// Stock Order (Admin)
+// Stock Order (Admin) — admin restock from supplier (distinct from member purchase orders)
 // ============================================================================
 
-function create_stock_order($created_by, $items = [], $note = null) {
+// Ensure stock_order tables exist, plus extra columns (supplier / expected delivery)
+function ensure_stock_order_columns() {
     global $_db;
     try {
+        // Create base tables when missing (fresh databases)
+        $_db->exec("CREATE TABLE IF NOT EXISTS stock_order (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            created_by INT NOT NULL,
+            datetime DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            note VARCHAR(255) DEFAULT NULL,
+            supplier VARCHAR(100) DEFAULT NULL,
+            expected_at DATETIME DEFAULT NULL,
+            status VARCHAR(20) NOT NULL DEFAULT 'pending',
+            received_at DATETIME DEFAULT NULL,
+            received_by INT DEFAULT NULL
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+        $_db->exec("CREATE TABLE IF NOT EXISTS stock_order_item (
+            id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            stock_order_id INT NOT NULL,
+            product_id VARCHAR(10) NOT NULL,
+            qty INT NOT NULL DEFAULT 0,
+            price DECIMAL(10,2) DEFAULT NULL,
+            KEY idx_stock_order (stock_order_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+
+        $check = $_db->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stock_order' AND COLUMN_NAME = 'supplier'");
+        $check->execute();
+        if ((int)$check->fetchColumn() === 0) {
+            $_db->exec("ALTER TABLE `stock_order` ADD COLUMN `supplier` varchar(100) DEFAULT NULL");
+        }
+        $check = $_db->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'stock_order' AND COLUMN_NAME = 'expected_at'");
+        $check->execute();
+        if ((int)$check->fetchColumn() === 0) {
+            $_db->exec("ALTER TABLE `stock_order` ADD COLUMN `expected_at` datetime DEFAULT NULL");
+        }
+    } catch (Exception $e) {
+        // Table may not exist yet — ignore
+    }
+}
+
+function create_stock_order($created_by, $items = [], $note = null, $supplier = null, $expected_at = null) {
+    global $_db;
+    ensure_stock_order_columns();
+    try {
         $_db->beginTransaction();
-        $stm = $_db->prepare('INSERT INTO stock_order (created_by, note) VALUES (?, ?)');
-        $stm->execute([$created_by, $note]);
+        $stm = $_db->prepare('INSERT INTO stock_order (created_by, note, supplier, expected_at) VALUES (?, ?, ?, ?)');
+        $stm->execute([$created_by, $note, $supplier, $expected_at]);
         $order_id = $_db->lastInsertId();
 
         $istm = $_db->prepare('INSERT INTO stock_order_item (stock_order_id, product_id, qty, price) VALUES (?, ?, ?, ?)');

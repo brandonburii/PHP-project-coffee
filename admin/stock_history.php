@@ -90,7 +90,9 @@ include '../_head.php';
                 <td class="right"><?= $h->items ?></td>
                 <td class="right">RM <?= sprintf('%.2f', $h->total) ?></td>
                 <td>
-                    <?php if ($h->status == 'cancelled'): ?>
+                    <?php if ($h->status == 'pending'): ?>
+                        <span class="badge-status process">Pending Cancellation</span>
+                    <?php elseif ($h->status == 'cancelled'): ?>
                         <span class="badge-status danger">Cancelled</span>
                     <?php elseif ($h->status == 'refunded'): ?>
                         <span class="badge-status neutral">Refunded</span>

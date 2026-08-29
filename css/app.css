@@ -1085,14 +1085,97 @@ label.upload .upload-hint {
     margin-top: 8px;
 }
 
-.product-detail .gallery img {
+.gallery-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.product-detail .gallery {
+    position: relative;
     width: 100%;
     aspect-ratio: 1 / 1;
-    object-fit: cover;
+    overflow: hidden;
     border-radius: var(--radius);
     border: 1px solid var(--line);
     box-shadow: var(--shadow-sm);
     background: var(--cream-soft);
+}
+
+.product-detail .gallery .main-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.3s ease;
+}
+
+.product-detail .gallery .gallery-nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 12px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.product-detail .gallery:hover .gallery-nav {
+    opacity: 1;
+}
+
+.product-detail .gallery .gallery-nav button {
+    background: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    color: var(--coffee);
+    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.product-detail .gallery .gallery-nav button:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+
+.gallery-thumbnails {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 4px 0;
+}
+
+.gallery-thumbnails .thumbnail {
+    flex: 0 0 60px;
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    opacity: 0.6;
+}
+
+.gallery-thumbnails .thumbnail:hover {
+    opacity: 1;
+}
+
+.gallery-thumbnails .thumbnail.active {
+    border-color: var(--coffee);
+    opacity: 1;
+    box-shadow: var(--shadow-sm);
 }
 
 .product-detail .pd-info h2 {
@@ -1174,8 +1257,8 @@ label.upload .upload-hint {
         grid-template-columns: 1fr;
         gap: 20px;
     }
-    .product-detail .gallery img {
-        max-width: 320px;
+    .product-detail .gallery {
+        max-width: 100%;
     }
 }
 

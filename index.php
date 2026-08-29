@@ -245,7 +245,7 @@ include '_head.php';
                         <?php if ($on_sale && $in_stock): ?>
                             <span class="badge sale-badge">SALE</span>
                         <?php endif ?>
-                        <img src="/photos/<?= photo_url($p->photo) ?>"
+                        <img src="<?= photo_src($p->photo) ?>"
                              alt="<?= encode($p->name) ?>"
                              data-get="/product/detail.php?id=<?= $p->id ?>">
                     </div>
@@ -323,7 +323,7 @@ include '_head.php';
             <?php foreach ($low_reward_stock as $lr): ?>
             <a href="/admin/reward_edit.php?id=<?= (int) $lr->id ?>"
                style="display:flex; align-items:center; gap:14px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; text-decoration:none; color:inherit; background:#fff;">
-                <img src="/photos/<?= photo_url($lr->photo) ?>" alt=""
+                <img src="<?= photo_src($lr->photo) ?>" alt=""
                      style="width:42px; height:42px; object-fit:cover; border-radius:8px; border:1px solid var(--line);">
                 <div style="flex:1; min-width:0;">
                     <div style="font-weight:600; color:var(--coffee-dark);"><?= encode($lr->name) ?></div>
@@ -352,7 +352,7 @@ include '_head.php';
                 <?php foreach ($low_stock_products as $lp): ?>
                 <a href="/admin/product_edit.php?id=<?= urlencode($lp->id) ?>"
                    style="display:flex; align-items:center; gap:14px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; text-decoration:none; color:inherit; background:#fff;">
-                    <img src="/photos/<?= $lp->photo ?>" alt=""
+                    <img src="<?= photo_src($lp->photo) ?>" alt=""
                          style="width:42px; height:42px; object-fit:cover; border-radius:8px; border:1px solid var(--line);">
                     <div style="flex:1; min-width:0;">
                         <div style="font-weight:600; color:var(--coffee-dark);"><?= encode($lp->name) ?></div>
@@ -416,7 +416,7 @@ include '_head.php';
         <div class="card loyalty-featured">
             <h3 style="margin-top:0;">Featured Reward</h3>
             <div style="display:flex; gap:14px; align-items:center;">
-                <img src="/photos/<?= photo_url($featured_reward->photo) ?>" alt=""
+                <img src="<?= photo_src($featured_reward->photo) ?>" alt=""
                      style="width:72px;height:72px;object-fit:cover;border-radius:12px;border:1px solid var(--line);">
                 <div>
                     <div style="font-weight:700;color:var(--coffee-dark);"><?= encode($featured_reward->name) ?></div>
@@ -518,7 +518,7 @@ include '_head.php';
                         <?php if ($on_sale && $in_stock): ?>
                             <span class="badge sale-badge">SALE</span>
                         <?php endif ?>
-                        <img src="/photos/<?= photo_url($p->photo) ?>"
+                        <img src="<?= photo_src($p->photo) ?>"
                              alt="<?= encode($p->name) ?>"
                              data-get="/product/detail.php?id=<?= $p->id ?>">
                     </div>
@@ -572,7 +572,7 @@ include '_head.php';
                         <?php if ($on_sale && $in_stock): ?>
                             <span class="badge sale-badge">SALE</span>
                         <?php endif ?>
-                        <img src="/photos/<?= photo_url($p->photo) ?>"
+                        <img src="<?= photo_src($p->photo) ?>"
                              alt="<?= encode($p->name) ?>"
                              data-get="/product/detail.php?id=<?= $p->id ?>">
                     </div>

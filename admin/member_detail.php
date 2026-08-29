@@ -137,10 +137,10 @@ include '../_head.php';
     <div style="min-width:150px;">
         <label>Photo</label>
         <br>
-        <img src="/photos/<?= $m->photo ?>" style="width:150px;height:150px;object-fit:cover;border:1px solid #ccc;border-radius:5px;">
+        <img src="<?= photo_src($m->photo) ?>" style="width:150px;height:150px;object-fit:cover;border:1px solid #ccc;border-radius:5px;">
         <label class="upload" style="display:block;margin-top:8px;">
             <?= html_file('photo', 'image/*') ?>
-            <img src="/photos/0.jpg" style="display:none;">
+            <img src="<?= photo_src('0.jpg') ?>" style="display:none;">
         </label>
         <?= err('photo') ?>
     </div>

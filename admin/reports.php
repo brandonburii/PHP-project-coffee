@@ -264,7 +264,7 @@ include '../_head.php';
                 <?php if ((int)$p->units_sold === 0) continue; ?>
                 <tr>
                     <td>
-                        <img src="/photos/<?= $p->photo ?>" alt=""
+                        <img src="<?= photo_src($p->photo) ?>" alt=""
                              style="width:36px;height:36px;object-fit:cover;border-radius:6px;vertical-align:middle;margin-right:8px;border:1px solid var(--line);">
                         <?= encode($p->name) ?>
                     </td>
