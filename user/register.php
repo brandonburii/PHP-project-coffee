@@ -145,6 +145,97 @@ include '../_head.php';
     background: #eee;
     color: #000;
 }
+
+/* --- Password field: input + eye icon + generate button, all in ONE grid cell --- */
+.password-field-wrapper {
+    width: 100%;
+}
+
+.password-row-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.input-with-eye {
+    position: relative;
+    flex: 1;
+    min-width: 0; /* allows flex child to shrink properly */
+}
+
+.input-with-eye input {
+    width: 100%;
+    padding-right: 38px;
+    box-sizing: border-box;
+}
+
+.eye-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px;
+    color: #888;
+    line-height: 0;
+}
+
+
+.generate-btn {
+    flex-shrink: 0;
+    font-size: 12px;
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    background: #5c7785;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.generate-btn:hover {
+    background: #46606c;
+}
+
+/* Password strength meter: 5 blocks, fills red -> orange -> green */
+.strength-meter {
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+}
+
+.strength-block {
+    flex: 1;
+    height: 6px;
+    border-radius: 3px;
+    background: #e0e0e0;
+    transition: background-color 0.2s ease;
+}
+
+.strength-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 4px;
+    min-height: 15px; /* reserves space so nothing shifts when empty */
+}
+
+/* Hint always reserves its own line height (visibility, not display)
+   so it never overlaps the next field, whether shown or hidden */
+.generate-hint {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #27ae60;
+    visibility: hidden;
+    line-height: 1.3;
+}
 </style>
 
 <div class="auth-card">
@@ -159,11 +250,45 @@ include '../_head.php';
         <?= err('email') ?>
 
         <label for="password">Password <span class="req">*</span></label>
-        <?= html_password('password', 'maxlength="100" required placeholder="Min. 6 characters"') ?>
+        <div class="password-field-wrapper">
+            <div class="password-row-inner">
+                <div class="input-with-eye">
+                    <?= html_password('password', 'id="password-field" maxlength="100" required placeholder="Min. 6 characters"') ?>
+                    <button type="button" class="eye-toggle" id="toggle-password" title="Show/Hide password">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+                <button type="button" id="generate-password-btn" class="generate-btn">🎲 Generate</button>
+            </div>
+            <div class="strength-meter" id="strength-meter">
+                <div class="strength-block"></div>
+                <div class="strength-block"></div>
+                <div class="strength-block"></div>
+                <div class="strength-block"></div>
+                <div class="strength-block"></div>
+            </div>
+            <span class="strength-label" id="strength-label"></span>
+            <span class="generate-hint" id="generate-hint">✓ Strong password generated</span>
+        </div>
         <?= err('password') ?>
 
         <label for="confirm">Confirm Password <span class="req">*</span></label>
-        <?= html_password('confirm', 'maxlength="100" required placeholder="Re-enter password"') ?>
+        <div class="password-field-wrapper">
+            <div class="password-row-inner">
+                <div class="input-with-eye">
+                    <?= html_password('confirm', 'id="confirm-field" maxlength="100" required placeholder="Re-enter password"') ?>
+                    <button type="button" class="eye-toggle" id="toggle-confirm" title="Show/Hide password">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
         <?= err('confirm') ?>
 
         <label for="name">Name <span class="req">*</span></label>
@@ -191,8 +316,8 @@ include '../_head.php';
             <div id="photo-tools">
                 <button type="button" id="rotate-left">⟲ Rotate Left</button>
                 <button type="button" id="rotate-right">⟳ Rotate Right</button>
-                <button type="button" id="flip-h">⇋ Flip H</button>
-                <button type="button" id="flip-v">⇅ Flip V</button>
+                <button type="button" id="flip-h">⇋ Flip Left/Right</button>
+                <button type="button" id="flip-v">⇅ Flip Up/Down</button>
             </div>
             
             <?= err('photo') ?>
@@ -230,6 +355,112 @@ include '../_head.php';
     let flipV = false;
     let img = new Image();
     let hasEditedImage = false;
+
+    // --- Eye toggle (show/hide password) ---
+    function setupEyeToggle(toggleId, fieldId) {
+        const toggleBtn = document.getElementById(toggleId);
+        const field = document.getElementById(fieldId);
+        toggleBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            field.type = field.type === 'password' ? 'text' : 'password';
+        });
+    }
+    setupEyeToggle('toggle-password', 'password-field');
+    setupEyeToggle('toggle-confirm', 'confirm-field');
+
+    // --- Password Strength Meter ---
+    const strengthBlocks = document.querySelectorAll('#strength-meter .strength-block');
+    const strengthLabel = document.getElementById('strength-label');
+
+    function updateStrengthMeter(value) {
+        if (value.length === 0) {
+            strengthBlocks.forEach(block => block.style.background = '#e0e0e0');
+            strengthLabel.textContent = '';
+            return;
+        }
+
+        let score = 0;
+        if (value.length >= 6) score++;
+        if (value.length >= 10) score++;
+        if (/[a-z]/.test(value) && /[A-Z]/.test(value)) score++;
+        if (/[0-9]/.test(value)) score++;
+        if (/[^A-Za-z0-9]/.test(value)) score++;
+
+        let color, label;
+        if (score <= 2) {
+            color = '#e74c3c'; label = 'Weak';
+        } else if (score === 3) {
+            color = '#f39c12'; label = 'Medium';
+        } else {
+            color = '#27ae60'; label = 'Strong';
+        }
+
+        strengthBlocks.forEach((block, i) => {
+            block.style.background = i < score ? color : '#e0e0e0';
+        });
+
+        strengthLabel.textContent = label;
+        strengthLabel.style.color = color;
+    }
+
+    document.getElementById('password-field').addEventListener('input', function() {
+        updateStrengthMeter(this.value);
+    });
+
+    // --- Password Generator Logic ---
+    const generateBtn = document.getElementById('generate-password-btn');
+    const passwordField = document.getElementById('password-field');
+    const confirmField = document.getElementById('confirm-field');
+    const generateHint = document.getElementById('generate-hint');
+    const togglePasswordBtn = document.getElementById('toggle-password');
+    const toggleConfirmBtn = document.getElementById('toggle-confirm');
+    let hintTimeout = null;
+
+    generateBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+
+        const length = 12;
+        const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+        const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const numbers = '0123456789';
+        const symbols = '!@#$%^&*';
+        const all = lowercase + uppercase + numbers + symbols;
+
+        // Guarantee at least one of each character type
+        let chars = [
+            lowercase[Math.floor(Math.random() * lowercase.length)],
+            uppercase[Math.floor(Math.random() * uppercase.length)],
+            numbers[Math.floor(Math.random() * numbers.length)],
+            symbols[Math.floor(Math.random() * symbols.length)],
+        ];
+
+        // Fill the rest randomly
+        for (let i = chars.length; i < length; i++) {
+            chars.push(all[Math.floor(Math.random() * all.length)]);
+        }
+
+        // Shuffle so guaranteed characters aren't always in the same position
+        chars = chars.sort(() => Math.random() - 0.5);
+        const generatedPassword = chars.join('');
+
+        // Fill both fields
+        passwordField.value = generatedPassword;
+        confirmField.value = generatedPassword;
+        updateStrengthMeter(generatedPassword);
+
+        // Briefly reveal as plain text so user can see/copy it
+        passwordField.type = 'text';
+        confirmField.type = 'text';
+
+        generateHint.style.visibility = 'visible';
+        if (hintTimeout) clearTimeout(hintTimeout);
+        hintTimeout = setTimeout(() => { generateHint.style.visibility = 'hidden'; }, 3000);
+
+        setTimeout(() => {
+            passwordField.type = 'password';
+            confirmField.type = 'password';
+        }, 3000);
+    });
 
     // --- Webcam Logic ---
     startCameraBtn.addEventListener('click', async (e) => {
@@ -409,4 +640,3 @@ include '../_head.php';
 
 <?php
 include '../_foot.php';
-?>
