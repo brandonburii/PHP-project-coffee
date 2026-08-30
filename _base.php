@@ -1029,6 +1029,23 @@ function is_exists($value, $table, $field) {
 // Range 1-10
 $_units = array_combine(range(1, 10), range(1, 10));
 
+
+
+
+// ============================================================================
+// Auto-login check for "Remember Me" cookie
+// ============================================================================
+
+if (!isset($_SESSION['user']) && isset($_COOKIE['remember_token'])) {
+    $token = $_COOKIE['remember_token'];
+    
+    $stm = $_db->prepare('SELECT * FROM user WHERE remember_token = ?');
+    $stm->execute([$token]);
+    $u = $stm->fetch();
+
+    if ($u) {
+        // Log the user in automatically
+        login($u); 
 // ============================================================================
 // Category Maintenance Helpers
 // ============================================================================
