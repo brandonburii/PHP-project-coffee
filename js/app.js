@@ -88,6 +88,24 @@ $(() => {
         }
     });
 
+    // Show custom quantity modal for Add to Cart
+    $(document).on('click', 'button[data-ask-qty]', function (e) {
+        e.preventDefault();
+        const $btn = $(this);
+        const $form = $btn.closest('form');
+        const max = parseInt($btn.data('max')) || 10;
+        const current = parseInt($form.find('[name=unit]').val()) || 1;
+
+        showQuantityModal({
+            max,
+            value: current,
+            onConfirm: qty => {
+                $form.find('[name=unit]').val(qty);
+                $form.submit();
+            }
+        });
+    });
+
     // AJAX Add to Cart (product list / detail / buy again)
     $(document).on('submit', 'form.ajax-cart', function (e) {
         e.preventDefault();
@@ -95,7 +113,7 @@ $(() => {
         const id = $form.find('[name=id]').val();
         const unit = $form.find('[name=unit]').val() || 1;
         const mode = $form.data('cart-mode') || 'set'; // set | add
-        const $btn = $form.find('button[type=submit]');
+        const $btn = $form.find('button[data-ask-qty]');
 
         $btn.prop('disabled', true);
 
@@ -129,6 +147,24 @@ $(() => {
                 } else if ($form.hasClass('pd-buy')) {
                     $form.append('<span class="badge-status success">' + item.unit + ' in cart</span>');
                 }
+
+                const remaining = Math.max(0, Number(item.stock) - Number(item.unit));
+                const $avail = $(`.avail-box[data-product-id="${id}"]`);
+                if ($avail.length) {
+                    if (remaining > 0) {
+                        $avail.removeClass('out').addClass('in').text(remaining + ' available').attr('data-available', remaining);
+                    } else {
+                        $avail.removeClass('in').addClass('out').text('Out of stock').attr('data-available', 0);
+                    }
+                }
+                const newMax = Math.min(remaining, 10);
+                $btn.attr('data-max', newMax);
+                if (remaining <= 0) {
+                    $btn.prop('disabled', true).text('Sold Out');
+                } else {
+                    $btn.prop('disabled', false).text('Add to Cart');
+                }
+                $form.find('[name=unit]').val(1);
             }
         }).fail(() => {
             showToast('Network error');
@@ -191,6 +227,104 @@ function runConfirmedAction(el) {
 }
 
 // Show a modern confirmation modal
+function showQuantityModal({ max = 10, value = 1, onConfirm }) {
+    $('.modal-overlay').remove();
+
+    const $overlay = $(
+        "<div class='modal-overlay quantity-overlay' role='dialog' aria-modal='true'>" +
+            "<div class='modal quantity-modal'>" +
+                "<div class='modal-icon'>✔</div>" +
+                "<h3>Select quantity</h3>" +
+                "<p class='quantity-info'>Enter how many items to add to cart.</p>" +
+                "<div class='quantity-controls'>" +
+                    "<button type='button' class='qty-minus'>−</button>" +
+                    "<input type='number' min='1' max='" + max + "' value='" + value + "' aria-label='Quantity' />" +
+                    "<button type='button' class='qty-plus'>+</button>" +
+                "</div>" +
+                "<div class='quantity-available'>" +
+                    "Available: " + max + " items" +
+                "</div>" +
+                "<div class='modal-actions'>" +
+                    "<button type='button' class='secondary js-cancel'>Cancel</button>" +
+                    "<button type='button' class='success js-confirm'>Add to Cart</button>" +
+                "</div>" +
+            "</div>" +
+        "</div>"
+    );
+
+    const $input = $overlay.find('input');
+    const updateValue = qty => {
+        qty = parseInt(qty);
+        if (isNaN(qty) || qty < 1) {
+            showToast('Quantity must be at least 1');
+            $input.val(1);
+            return;
+        }
+        if (qty > max) {
+            showToast('Quantity cannot exceed ' + max);
+            $input.val(max);
+            return;
+        }
+        $input.val(qty);
+    };
+
+    $overlay.find('.qty-minus').on('click', () => {
+        const next = parseInt($input.val()) - 1;
+        updateValue(next);
+    });
+    $overlay.find('.qty-plus').on('click', () => {
+        const next = parseInt($input.val()) + 1;
+        updateValue(next);
+    });
+
+    $input.on('input', () => {
+        let qty = parseInt($input.val());
+        if (isNaN(qty) || qty < 1) qty = 1;
+        if (qty > max) qty = max;
+        $input.val(qty);
+    });
+
+    $input.on('change', () => {
+        const qty = parseInt($input.val());
+        if (isNaN(qty) || qty < 1) {
+            $input.val(1);
+            showToast('Quantity must be at least 1');
+            return;
+        }
+        if (qty > max) {
+            $input.val(max);
+            showToast('Quantity cannot exceed ' + max);
+        }
+    });
+
+    const close = () => $overlay.remove();
+    $overlay.find('.js-cancel').on('click', close);
+    $overlay.find('.js-confirm').on('click', () => {
+        const qty = parseInt($input.val());
+        if (isNaN(qty) || qty < 1) {
+            showToast('Please enter a valid quantity');
+            return;
+        }
+        if (qty > max) {
+            showToast('Quantity cannot exceed ' + max);
+            updateValue(max);
+            return;
+        }
+        close();
+        onConfirm(qty);
+    });
+    $overlay.on('click', e => { if (e.target === $overlay[0]) close(); });
+    $(document).on('keydown.quantityModal', e => {
+        if (e.key === 'Escape') {
+            close();
+            $(document).off('keydown.quantityModal');
+        }
+    });
+
+    $('body').append($overlay);
+    $input.focus().select();
+}
+
 function showConfirm(title, body, onConfirm) {
     // Remove any existing modal
     $('.modal-overlay').remove();
@@ -199,7 +333,8 @@ function showConfirm(title, body, onConfirm) {
         "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' " +
         "stroke-linecap='round' stroke-linejoin='round'>" +
         "<path d='M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z'/>" +
-        "<path d='M12 9v4'/><path d='M12 17h.01'/></svg>";
+        "<path d='M12 9v4'/><path d='M12 17h.01'/>" +
+        "</svg>";
 
     const $overlay = $(
         "<div class='modal-overlay' role='dialog' aria-modal='true'>" +

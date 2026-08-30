@@ -6,9 +6,19 @@ auth('Admin');
 if (is_post()) {
     $code = req('code');
     if ($code != '' && is_exists($code, 'voucher', 'code')) {
+        $stm = $_db->prepare('SELECT active FROM voucher WHERE code = ?');
+        $stm->execute([$code]);
+        $before_active = (int) $stm->fetchColumn();
+
         $stm = $_db->prepare('UPDATE voucher SET active = 1 - active WHERE code = ?');
         $stm->execute([$code]);
-        audit('Vouchers', 'Voucher Toggled', "Toggled active status for voucher: $code");
+        audit(
+            'Vouchers',
+            'Voucher Toggled',
+            "Toggled active status for voucher: $code",
+            ['active' => $before_active],
+            ['active' => 1 - $before_active]
+        );
         temp('info', 'Voucher status updated');
     }
     redirect();
@@ -77,7 +87,7 @@ include '../_head.php';
     </thead>
     <tbody>
         <?php foreach ($arr as $v):
-            $expired = strtotime($v->expiry) < strtotime(date('Y-m-d'));
+            $expired = !empty($v->expiry) && strtotime($v->expiry) < strtotime(date('Y-m-d'));
             $usage   = (int) ($v->usage_count ?? 0);
             $max     = $v->max_usage;
         ?>
@@ -92,11 +102,11 @@ include '../_head.php';
             </td>
             <td class="right">RM <?= sprintf('%.2f', $v->min_spend ?? 0) ?></td>
             <td>
-                <?= $v->expiry ?>
+                <?= !empty($v->expiry) ? $v->expiry : 'Never' ?>
                 <?php if ($expired): ?><span class="badge-status danger">Expired</span><?php endif ?>
             </td>
             <td class="right">
-                <?= $usage ?><?= $max !== null && $max !== '' ? ' / ' . (int) $max : '' ?>
+                <?= $usage ?><?= $max !== null && $max !== '' ? ' / ' . (int) $max : ' / ∞' ?>
             </td>
             <td>
                 <?php if ($v->active): ?>

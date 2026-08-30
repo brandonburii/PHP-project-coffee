@@ -71,16 +71,20 @@ CREATE TABLE `order` (
   `user_id` int(11) NOT NULL,
   `points_earned` int(11) NOT NULL DEFAULT 0,
   `points_used` int(11) NOT NULL DEFAULT 0,
-  `voucher_code` varchar(20) DEFAULT NULL
+  `voucher_code` varchar(20) DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'completed',
+  `cancelled_at` datetime DEFAULT NULL,
+  `cancelled_by` int(11) DEFAULT NULL,
+  `cancel_reason` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `order`
 --
 
-INSERT INTO `order` (`id`, `datetime`, `count`, `subtotal`, `discount`, `total`, `user_id`, `points_earned`, `points_used`, `voucher_code`) VALUES
-(1, '2026-07-18 14:27:19', 1, 0.00, 0.00, 22.00, 4, 0, 0, NULL),
-(2, '2026-07-28 10:26:40', 10, 250.00, 0.00, 250.00, 2, 250, 0, NULL);
+INSERT INTO `order` (`id`, `datetime`, `count`, `subtotal`, `discount`, `total`, `user_id`, `points_earned`, `points_used`, `voucher_code`, `status`, `cancelled_at`, `cancelled_by`, `cancel_reason`) VALUES
+(1, '2026-07-18 14:27:19', 1, 0.00, 0.00, 22.00, 4, 0, 0, NULL, 'completed', NULL, NULL, NULL),
+(2, '2026-07-28 10:26:40', 10, 250.00, 0.00, 250.00, 2, 250, 0, NULL, 'completed', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -108,25 +112,46 @@ CREATE TABLE `product` (
 --
 
 INSERT INTO `product` (`id`, `name`, `price`, `sale_price`, `sale_start`, `sale_end`, `photo`, `description`, `origin`, `roast`, `tag`, `stock`) VALUES
-('P001', 'Ethiopia Yirgacheffe', 25.00, NULL, NULL, NULL, 'ethiopia.jpg', 'Specialty coffee beans with floral and citrus notes.', NULL, NULL, NULL, 5),
-('P002', 'Colombia Supremo', 22.00, NULL, NULL, NULL, 'colombia.jpg', 'Rich, full-bodied coffee beans with sweet caramel undertones.', NULL, NULL, NULL, 19),
-('P003', 'Brazil Santos', 18.00, NULL, NULL, NULL, 'brazil.jpg', 'Smooth, low-acid coffee beans with nutty chocolate notes.', NULL, NULL, NULL, 25),
-('P004', 'House Blend', 20.00, NULL, NULL, NULL, 'house_blend.jpg', 'Signature blend of premium beans for a balanced daily cup.', NULL, NULL, NULL, 30),
-('P005', 'Matcha', 35.00, NULL, NULL, NULL, 'matcha.jpg', 'Premium ceremonial grade green tea powder from Uji, Japan.', NULL, NULL, NULL, 12),
-('P006', 'Earl Grey', 15.00, NULL, NULL, NULL, 'earl_grey.jpg', 'Classic black tea infused with natural bergamot oil.', NULL, NULL, NULL, 40),
-('P007', 'Jasmine Green Tea', 16.00, NULL, NULL, NULL, 'jasmine.jpg', 'Fragrant green tea scented with fresh jasmine blossoms.', NULL, NULL, NULL, 35),
-('P008', 'French Press', 45.00, NULL, NULL, NULL, 'french_press.jpg', 'Double-walled stainless steel press, 8-cup capacity.', NULL, NULL, NULL, 10),
-('P009', 'V60 Dripper', 28.00, NULL, NULL, NULL, 'v60.jpg', 'Ceramic coffee dripper for precise pour-over brewing.', NULL, NULL, NULL, 15),
-('P010', 'Coffee Mug', 12.00, NULL, NULL, NULL, 'mug.jpg', 'Ceramic matte-finish mug with comfortable grip.', NULL, NULL, NULL, 50);
+('P001', 'Ethiopia Yirgacheffe', 25.00, NULL, NULL, NULL, '1.jpg', 'Specialty coffee beans with floral and citrus notes.', NULL, NULL, NULL, 5),
+('P002', 'Colombia Supremo', 22.00, NULL, NULL, NULL, '2.jpg', 'Rich, full-bodied coffee beans with sweet caramel undertones.', NULL, NULL, NULL, 19),
+('P003', 'Brazil Santos', 18.00, NULL, NULL, NULL, '3.jpg', 'Smooth, low-acid coffee beans with nutty chocolate notes.', NULL, NULL, NULL, 25),
+('P004', 'House Blend', 20.00, NULL, NULL, NULL, '4.jpg', 'Signature blend of premium beans for a balanced daily cup.', NULL, NULL, NULL, 30),
+('P005', 'Matcha', 35.00, NULL, NULL, NULL, '1.jpg', 'Premium ceremonial grade green tea powder from Uji, Japan.', NULL, NULL, NULL, 12),
+('P006', 'Earl Grey', 15.00, NULL, NULL, NULL, '2.jpg', 'Classic black tea infused with natural bergamot oil.', NULL, NULL, NULL, 40),
+('P007', 'Jasmine Green Tea', 16.00, NULL, NULL, NULL, '3.jpg', 'Fragrant green tea scented with fresh jasmine blossoms.', NULL, NULL, NULL, 35),
+('P008', 'French Press', 45.00, NULL, NULL, NULL, '4.jpg', 'Double-walled stainless steel press, 8-cup capacity.', NULL, NULL, NULL, 10),
+('P009', 'V60 Dripper', 28.00, NULL, NULL, NULL, '1.jpg', 'Ceramic coffee dripper for precise pour-over brewing.', NULL, NULL, NULL, 15),
+('P010', 'Coffee Mug', 12.00, NULL, NULL, NULL, '2.jpg', 'Ceramic matte-finish mug with comfortable grip.', NULL, NULL, NULL, 50);
 
 -- --------------------------------------------------------
 
+
+CREATE TABLE `category` (
+  `id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `slug` varchar(100) NOT NULL,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `sort_order` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 --
--- Table structure for table `reward`
+-- Dumping data for table `category`
 --
+
+-- (no category data)
+
+-- --------------------------------------------------------
+
+
 
 CREATE TABLE `reward` (
   `id` int(11) NOT NULL,
+
+--
+-- Indexes/keys for cancellation references
+--
+ALTER TABLE `order`
+  ADD KEY `cancelled_by` (`cancelled_by`);
   `name` varchar(100) NOT NULL,
   `description` varchar(500) NOT NULL,
   `photo` varchar(100) NOT NULL,
@@ -141,10 +166,10 @@ CREATE TABLE `reward` (
 --
 
 INSERT INTO `reward` (`id`, `name`, `description`, `photo`, `points`, `stock`, `active`, `sort_order`) VALUES
-(1, 'Signature Latte', 'A free signature latte of your choice.', '0.jpg', 500, 50, 1, 1),
-(2, 'Matcha Latte', 'Redeem a refreshing matcha latte.', '0.jpg', 800, 30, 1, 2),
-(3, 'Cheesecake Slice', 'One slice of our house cheesecake.', '0.jpg', 1200, 20, 1, 3),
-(4, 'Coffee Tumbler', 'Branded specialty coffee tumbler.', '0.jpg', 2500, 10, 1, 4);
+(1, 'Signature Latte', 'A free signature latte of your choice.', 'Signature Latte.jpg.png', 500, 50, 1, 1),
+(2, 'Matcha Latte', 'Redeem a refreshing matcha latte.', 'Matcha Latte.jpg.png', 800, 30, 1, 2),
+(3, 'Cheesecake Slice', 'One slice of our house cheesecake.', 'Cheesecake Slice.jpg.png', 1200, 20, 1, 3),
+(4, 'Coffee Tumbler', 'Branded specialty coffee tumbler.', 'Coffee Tumbler.jpg.png', 2500, 10, 1, 4);
 
 -- --------------------------------------------------------
 
@@ -183,6 +208,26 @@ INSERT INTO `setting` (`key`, `value`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `audit_log`
+--
+
+CREATE TABLE `audit_log` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) DEFAULT NULL,
+  `username` varchar(100) DEFAULT NULL,
+  `role` varchar(100) DEFAULT NULL,
+  `module` varchar(100) NOT NULL,
+  `action` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `before_data` longtext DEFAULT NULL,
+  `after_data` longtext DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `stock_history`
 --
 
@@ -196,6 +241,37 @@ CREATE TABLE `stock_history` (
   `user_id` int(11) DEFAULT NULL,
   `username` varchar(100) DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+--
+-- Table structure for table `stock_order`
+--
+
+CREATE TABLE `stock_order` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `datetime` datetime NOT NULL DEFAULT current_timestamp(),
+  `created_by` int(11) NOT NULL,
+  `status` enum('pending','received') NOT NULL DEFAULT 'pending',
+  `received_at` datetime DEFAULT NULL,
+  `received_by` int(11) DEFAULT NULL,
+  `note` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Table structure for table `stock_order_item`
+--
+
+CREATE TABLE `stock_order_item` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `stock_order_id` int(11) NOT NULL,
+  `product_id` varchar(10) NOT NULL,
+  `qty` int(11) NOT NULL,
+  `price` decimal(10,2) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `stock_order_id` (`stock_order_id`),
+  CONSTRAINT `stock_order_item_ibfk_1` FOREIGN KEY (`stock_order_id`) REFERENCES `stock_order` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -230,18 +306,20 @@ CREATE TABLE `user` (
   `name` varchar(100) NOT NULL,
   `photo` varchar(100) NOT NULL,
   `role` varchar(100) NOT NULL,
-  `points` int(11) NOT NULL DEFAULT 0
+  `points` int(11) NOT NULL DEFAULT 0,
+  `active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dumping data for table `user`
 --
 
-INSERT INTO `user` (`id`, `email`, `password`, `name`, `photo`, `role`, `points`) VALUES
-(1, '1@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Lisa Manobal', '1.jpg', 'Admin', 0),
-(2, '2@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Kim Jisoo', '2.jpg', 'Member', 250),
-(3, '3@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Kim Jennie', '3.jpg', 'Member', 0),
-(4, '4@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Roseanne Park', '4.jpg', 'Member', 0);
+INSERT INTO `user` (`id`, `email`, `password`, `name`, `photo`, `role`, `points`, `active`, `created_at`) VALUES
+(1, '1@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Lisa Manobal', '1.jpg', 'Admin', 0, 1, NOW()),
+(2, '2@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Kim Jisoo', '2.jpg', 'Member', 250, 1, NOW()),
+(3, '3@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Kim Jennie', '3.jpg', 'Member', 0, 1, NOW()),
+(4, '4@gmail.com', '7c4a8d09ca3762af61e59520943dc26494f8941b', 'Roseanne Park', '4.jpg', 'Member', 0, 1, NOW());
 
 -- --------------------------------------------------------
 
@@ -275,6 +353,16 @@ INSERT INTO `voucher` (`code`, `description`, `type`, `value`, `min_spend`, `sta
 --
 
 --
+-- Indexes for table `audit_log`
+--
+ALTER TABLE `audit_log`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `module` (`module`),
+  ADD KEY `action` (`action`),
+  ADD KEY `created_at` (`created_at`);
+
+--
 -- Indexes for table `cart`
 --
 ALTER TABLE `cart`
@@ -299,6 +387,12 @@ ALTER TABLE `order`
 -- Indexes for table `product`
 --
 ALTER TABLE `product`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `category`
+--
+ALTER TABLE `category`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -353,6 +447,12 @@ ALTER TABLE `voucher`
 --
 
 --
+-- AUTO_INCREMENT for table `audit_log`
+--
+ALTER TABLE `audit_log`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `order`
 --
 ALTER TABLE `order`
@@ -363,6 +463,12 @@ ALTER TABLE `order`
 --
 ALTER TABLE `reward`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `category`
+--
+ALTER TABLE `category`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
 
 --
 -- AUTO_INCREMENT for table `reward_redemption`
@@ -385,6 +491,12 @@ ALTER TABLE `user`
 --
 -- Constraints for dumped tables
 --
+
+--
+-- Constraints for table `audit_log`
+--
+ALTER TABLE `audit_log`
+  ADD CONSTRAINT `audit_log_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE SET NULL;
 
 --
 -- Constraints for table `cart`

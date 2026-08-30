@@ -62,13 +62,26 @@ if (is_post()) {
         $photo_name = save_photo($photo, '../photos');
 
         // Insert into database
-        $stm = $_db->prepare('INSERT INTO user (email, password, name, photo, role) VALUES (?, SHA1(?), ?, ?, ?)');
+        $stm = $_db->prepare('INSERT INTO user (email, password, name, photo, role, active) VALUES (?, SHA1(?), ?, ?, ?, 1)');
         $stm->execute([$email, $password, $name, $photo_name, $role]);
+        $new_id = (int) $_db->lastInsertId();
 
         if ($role == 'Admin') {
-            audit('Admin', 'Admin Created', "Registered new Admin: $email, Name: $name");
+            audit(
+                'Admin',
+                'Admin Created',
+                "Registered new Admin: $email, Name: $name",
+                null,
+                ['id' => $new_id, 'email' => $email, 'name' => $name, 'role' => 'Admin', 'active' => 1]
+            );
         } else {
-            audit('Admin', 'Member Created', "Registered new Member: $email, Name: $name");
+            audit(
+                'Members',
+                'Member Created',
+                "Registered new Member: $email, Name: $name",
+                null,
+                ['id' => $new_id, 'email' => $email, 'name' => $name, 'role' => 'Member', 'active' => 1]
+            );
         }
 
         temp('info', 'Member registered successfully');
@@ -111,7 +124,7 @@ include '../_head.php';
     <label for="photo">Photo</label>
     <label class="upload">
         <?= html_file('photo', 'image/*') ?>
-        <img src="/photos/0.jpg">
+        <img src="<?= photo_src('0.jpg') ?>">
     </label>
     <?= err('photo') ?>
 
