@@ -44,6 +44,16 @@ if (is_post()) {
     }
 
     if (!$_err) {
+        $before = [
+            'name' => $r->name,
+            'description' => $r->description,
+            'photo' => $r->photo,
+            'points' => (int) $r->points,
+            'stock' => (int) $r->stock,
+            'active' => (int) $r->active,
+            'sort_order' => (int) $r->sort_order,
+        ];
+
         $photo_name = $r->photo;
         if ($photo) {
             if ($photo_name && $photo_name !== '0.jpg' && file_exists("../photos/$photo_name")) {
@@ -58,7 +68,21 @@ if (is_post()) {
         ');
         $stm->execute([$name, $description, $photo_name, $points, $stock, $active ? 1 : 0, $sort_order, $id]);
 
-        audit('Rewards', 'Reward Updated', "Updated reward ID $id: $name ($points pts)");
+        audit(
+            'Rewards',
+            'Reward Updated',
+            "Updated reward ID $id: $name ($points pts)",
+            $before,
+            [
+                'name' => $name,
+                'description' => $description,
+                'photo' => $photo_name,
+                'points' => (int) $points,
+                'stock' => (int) $stock,
+                'active' => $active ? 1 : 0,
+                'sort_order' => (int) $sort_order,
+            ]
+        );
         temp('info', 'Reward updated successfully');
         redirect('reward_list.php');
     }

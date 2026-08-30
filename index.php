@@ -46,8 +46,9 @@ if ($_user) {
             $points_issued    = (int) $_db->query("SELECT COALESCE(SUM(points_earned),0) FROM `order`")->fetchColumn();
             $active_vouchers  = (int) $_db->query("
                 SELECT COUNT(*) FROM voucher
-                WHERE active = 1 AND expiry >= CURDATE()
+                WHERE active = 1
                   AND (start_date IS NULL OR start_date <= CURDATE())
+                  AND (expiry IS NULL OR expiry >= CURDATE())
             ")->fetchColumn();
 
             $most_redeemed = $_db->query("
@@ -86,6 +87,13 @@ if ($_user) {
             FROM `order` o 
             JOIN user u ON o.user_id = u.id 
             ORDER BY o.id DESC 
+            LIMIT 5
+        ")->fetchAll();
+
+        // Recent System Activities (Audit Logs)
+        $recent_logs = $_db->query("
+            SELECT * FROM audit_log
+            ORDER BY id DESC
             LIMIT 5
         ")->fetchAll();
     } else {
@@ -156,7 +164,8 @@ if ($_user) {
                 FROM `order` o
                 JOIN voucher v ON v.code = o.voucher_code
                 WHERE o.user_id = ? AND o.voucher_code IS NOT NULL
-                  AND v.active = 1 AND v.expiry >= CURDATE()
+                  AND v.active = 1
+                  AND (v.expiry IS NULL OR v.expiry >= CURDATE())
                 ORDER BY o.id DESC
                 LIMIT 1
             ');
@@ -367,32 +376,80 @@ include '_head.php';
         <?php endif; ?>
     </div>
 
-    <div style="margin-top: 30px;">
-        <h2>Recent Orders</h2>
-        <?php if (empty($recent_orders)): ?>
-            <p>No recent orders found.</p>
-        <?php else: ?>
-            <table class="table" style="width: 100%;">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Member</th>
-                        <th>Total (RM)</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($recent_orders as $o): ?>
-                    <tr>
-                        <td><a href="/order/detail.php?id=<?= $o->id ?>" style="color: #5C4033; font-weight: bold;"><?= $o->id ?></a></td>
-                        <td><?= encode($o->user_name) ?></td>
-                        <td class="right"><?= sprintf('%.2f', $o->total) ?></td>
-                        <td><?= date('Y-m-d H:i', strtotime($o->datetime)) ?></td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php endif; ?>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 30px; margin-top: 30px;">
+        <!-- Recent Orders Column -->
+        <div>
+            <h2>Recent Orders</h2>
+            <?php if (empty($recent_orders)): ?>
+                <p>No recent orders found.</p>
+            <?php else: ?>
+                <table class="table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Member</th>
+                            <th>Total (RM)</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($recent_orders as $o): ?>
+                        <tr>
+                            <td><a href="/order/detail.php?id=<?= $o->id ?>" style="color: #5C4033; font-weight: bold;"><?= $o->id ?></a></td>
+                            <td><?= encode($o->user_name) ?></td>
+                            <td class="right"><?= sprintf('%.2f', $o->total) ?></td>
+                            <td><?= date('Y-m-d H:i', strtotime($o->datetime)) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
+
+        <!-- Recent System Activities Column -->
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">Recent System Activities</h2>
+                <button class="secondary" data-get="/admin/audit_log.php" style="font-size: 0.8rem; padding: 4px 10px;">View All</button>
+            </div>
+            <?php if (empty($recent_logs)): ?>
+                <p style="color: var(--muted);">No recent system activities.</p>
+            <?php else: ?>
+                <table class="table" style="width: 100%;">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Module</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($recent_logs as $l): ?>
+                        <tr>
+                            <td>
+                                <b><?= encode($l->username ?: 'Guest') ?></b>
+                                <div style="font-size: 0.75rem; color: var(--muted);"><?= encode($l->role ?: 'Guest') ?></div>
+                            </td>
+                            <td>
+                                <a href="/admin/audit_detail.php?id=<?= $l->id ?>" style="color: #5C4033; font-weight: bold;"><?= encode($l->action) ?></a>
+                                <?php if (!empty($l->description)): ?>
+                                    <div style="font-size: 0.75rem; color: var(--muted);" title="<?= encode($l->description) ?>">
+                                        <?= encode(strlen($l->description) > 40 ? substr($l->description, 0, 37) . '...' : $l->description) ?>
+                                    </div>
+                                <?php endif ?>
+                            </td>
+                            <td><?= encode($l->module) ?></td>
+                            <td>
+                                <div style="font-size: 0.85rem; white-space: nowrap;"><?= date('d M Y', strtotime($l->created_at)) ?></div>
+                                <div style="font-size: 0.75rem; color: var(--muted);"><?= date('h:i A', strtotime($l->created_at)) ?></div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </div>
     </div>
 
 <?php elseif ($_user->role == 'Member'): ?>
@@ -466,7 +523,7 @@ include '_head.php';
                 <div class="voucher-badge"><?= encode($active_voucher->code) ?></div>
                 <p style="margin:8px 0 0; color:var(--muted); font-size:.9rem;">
                     <?= encode($active_voucher->description ?? '') ?><br>
-                    Expires <?= $active_voucher->expiry ?>
+                    <?= !empty($active_voucher->expiry) ? 'Expires ' . $active_voucher->expiry : 'Never expires' ?>
                 </p>
             <?php else: ?>
                 <p style="color:var(--muted);margin:0;">No recent active voucher. Enter a code at checkout.</p>

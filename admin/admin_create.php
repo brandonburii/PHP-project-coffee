@@ -1,7 +1,6 @@
 <?php
 include '../_base.php';
 
-// Authorization check (Admin only)
 auth('Admin');
 
 if (is_post()) {
@@ -9,10 +8,8 @@ if (is_post()) {
     $password = req('password');
     $confirm  = req('confirm');
     $name     = req('name');
-    $role     = req('role');
     $photo    = get_file('photo');
 
-    // Validate email
     if ($email == '') {
         $_err['email'] = 'Required';
     }
@@ -23,7 +20,6 @@ if (is_post()) {
         $_err['email'] = 'Email already exists';
     }
 
-    // Validate password
     if ($password == '') {
         $_err['password'] = 'Required';
     }
@@ -31,7 +27,6 @@ if (is_post()) {
         $_err['password'] = 'Min 6 characters';
     }
 
-    // Validate confirm password
     if ($confirm == '') {
         $_err['confirm'] = 'Required';
     }
@@ -39,17 +34,10 @@ if (is_post()) {
         $_err['confirm'] = 'Passwords do not match';
     }
 
-    // Validate name
     if ($name == '') {
         $_err['name'] = 'Required';
     }
 
-    // Validate role
-    if ($role != 'Member' && $role != 'Admin') {
-        $_err['role'] = 'Invalid role';
-    }
-
-    // Validate photo
     if (!$photo) {
         $_err['photo'] = 'Required';
     }
@@ -58,45 +46,36 @@ if (is_post()) {
     }
 
     if (!$_err) {
-        // Save photo inside app/photos/
         $photo_name = save_photo($photo, '../photos');
 
-        // Insert into database
         $stm = $_db->prepare('INSERT INTO user (email, password, name, photo, role, active) VALUES (?, SHA1(?), ?, ?, ?, 1)');
-        $stm->execute([$email, $password, $name, $photo_name, $role]);
+        $stm->execute([$email, $password, $name, $photo_name, 'Admin']);
         $new_id = (int) $_db->lastInsertId();
 
-        if ($role == 'Admin') {
-            audit(
-                'Admin',
-                'Admin Created',
-                "Registered new Admin: $email, Name: $name",
-                null,
-                ['id' => $new_id, 'email' => $email, 'name' => $name, 'role' => 'Admin', 'active' => 1]
-            );
-        } else {
-            audit(
-                'Members',
-                'Member Created',
-                "Registered new Member: $email, Name: $name",
-                null,
-                ['id' => $new_id, 'email' => $email, 'name' => $name, 'role' => 'Member', 'active' => 1]
-            );
-        }
-
-        temp('info', 'Member registered successfully');
-        redirect('member_list.php');
+        audit(
+            'Admin',
+            'Admin Created',
+            "Created new Admin: $email, Name: $name",
+            null,
+            [
+                'id' => $new_id,
+                'email' => $email,
+                'name' => $name,
+                'role' => 'Admin',
+                'active' => 1,
+            ]
+        );
+        temp('info', 'Admin account created successfully');
+        redirect('admin_list.php');
     }
 }
 
-// ----------------------------------------------------------------------------
-
 $_breadcrumbs = [
     'Dashboard' => '/',
-    'Member Maintenance' => 'member_list.php',
-    'Register Member' => '',
+    'Admin Management' => 'admin_list.php',
+    'Create Admin' => '',
 ];
-$_title = 'Admin | Register Member';
+$_title = 'Admin | Create Admin';
 include '../_head.php';
 ?>
 
@@ -117,22 +96,21 @@ include '../_head.php';
     <?= html_text('name', 'maxlength="100"') ?>
     <?= err('name') ?>
 
-    <label for="role">Role</label>
-    <?= html_select('role', ['Member' => 'Member', 'Admin' => 'Admin'], null) ?>
-    <?= err('role') ?>
+    <label>Role</label>
+    <b>Admin</b>
+    <span></span>
 
     <label for="photo">Photo</label>
     <label class="upload">
         <?= html_file('photo', 'image/*') ?>
-        <img src="<?= photo_src('0.jpg') ?>">
+        <img src="/photos/0.jpg">
     </label>
     <?= err('photo') ?>
 
     <section>
-        <button>Register Member</button>
+        <button>Create Admin</button>
         <button type="reset">Reset</button>
     </section>
 </form>
 
-<?php
-include '../_foot.php';
+<?php include '../_foot.php';

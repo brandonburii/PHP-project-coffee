@@ -24,7 +24,7 @@ if (is_post()) {
     if (!$_err) {
         $stm = $_db->prepare('
             SELECT * FROM user
-            WHERE email = ? AND password = SHA1(?)
+            WHERE email = ? AND password = SHA1(?) AND active = 1
         ');
         $stm->execute([$email, $password]);
         $u = $stm->fetch();
@@ -36,7 +36,17 @@ if (is_post()) {
             login($u);
         }
         else {
-            $_err['password'] = 'Not matched';
+            $stm = $_db->prepare('
+                SELECT * FROM user
+                WHERE email = ? AND password = SHA1(?) AND active = 0
+            ');
+            $stm->execute([$email, $password]);
+            if ($stm->fetch()) {
+                $_err['password'] = 'Account disabled';
+            }
+            else {
+                $_err['password'] = 'Not matched';
+            }
             audit('Auth', 'Failed Login', "Failed login attempt for email: $email");
         }
     }

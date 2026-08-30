@@ -144,6 +144,32 @@ include '../_head.php';
         </label>
         <?= err('photo') ?>
     </div>
+<div style="display: flex; gap: 20px; align-items: flex-start;">
+    <img src="/photos/<?= photo_url($m->photo) ?>" style="width: 150px; height: 150px; object-fit: cover; border: 1px solid #ccc; border-radius: 5px;">
+
+    <table class="table detail">
+        <tr>
+            <th>Member ID</th>
+            <td><?= $m->id ?></td>
+        </tr>
+        <tr>
+            <th>Name</th>
+            <td><?= encode($m->name) ?></td>
+        </tr>
+        <tr>
+            <th>Email</th>
+            <td><?= encode($m->email) ?></td>
+        </tr>
+        <tr>
+            <th>Role</th>
+            <td><?= $m->role ?></td>
+        </tr>
+    </table>
+</div>
+
+<p>
+    <button data-get="member_list.php">Back to List</button>
+</p>
 
     <div style="flex:1;">
         <table class="table detail">

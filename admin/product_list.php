@@ -77,6 +77,7 @@ include '../_head.php';
         <tr>
             <td>
                 <img src="<?= photo_src($p->photo) ?>" style="width: 50px; height: 50px; object-fit: cover; border: 1px solid #ccc;">
+                <img src="/photos/<?= photo_url($p->photo) ?>" style="width: 50px; height: 50px; object-fit: cover; border: 1px solid #ccc;">
             </td>
             <td><?= encode($p->id) ?></td>
             <td><?= encode($p->name) ?></td>
