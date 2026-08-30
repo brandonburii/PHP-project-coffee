@@ -97,7 +97,7 @@ include '../_head.php';
         <label for="photo">Profile Photo <span class="req">*</span></label>
         <label class="upload">
             <?= html_file('photo', 'image/*', 'required') ?>
-            <img src="/photos/0.jpg" alt="Preview">
+            <img src="<?= photo_src('0.jpg') ?>" alt="Preview">
             <span class="upload-hint">Click to upload image</span>
         </label>
         <?= err('photo') ?>

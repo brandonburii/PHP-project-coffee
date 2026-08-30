@@ -75,6 +75,7 @@ include '../_head.php';
         <?php foreach ($arr as $m): ?>
         <tr>
             <td>
+                <img src="<?= photo_src($m->photo) ?>" style="width: 50px; height: 50px; object-fit: cover; border: 1px solid #ccc; border-radius: 5px;">
                 <img src="/photos/<?= photo_url($m->photo) ?>" style="width: 50px; height: 50px; object-fit: cover; border: 1px solid #ccc; border-radius: 5px;">
             </td>
             <td><?= $m->id ?></td>

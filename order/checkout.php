@@ -45,6 +45,8 @@ $available_points = (int) $stm->fetchColumn();
 $code   = req('code', '');
 $points = req('points', 0);
 
+// Form submissions are handled by `order/create_checkout.php` which
+// creates a Stripe Checkout Session and redirects the user to Stripe.
 if (is_post()) {
     // Validate: voucher (optional)
     $voucher = null;
@@ -237,9 +239,11 @@ include '../_head.php';
         <div class="checkout-list">
             <?php foreach ($items as $it):
                 $p = $it->product;
+                $img = photo_url($p->photo);
+                $imgFolder = is_file(__DIR__ . '/../products/' . $img) ? '/products/' : '/photos/';
             ?>
             <article class="checkout-item">
-                <img src="/photos/<?= photo_url($p->photo) ?>" alt="<?= encode($p->name) ?>">
+                <img src="<?= $imgFolder . rawurlencode($img) ?>" alt="<?= encode($p->name) ?>">
                 <div class="checkout-item-info">
                     <h3><?= encode($p->name) ?></h3>
                     <p>Qty <?= (int) $it->unit ?> · RM <?= sprintf('%.2f', $it->price) ?> each</p>
@@ -253,7 +257,7 @@ include '../_head.php';
     <aside class="card checkout-pay">
         <h2>Payment</h2>
 
-        <form method="post" class="form checkout-form" id="checkout-form" style="max-width:none;">
+        <form method="post" action="/order/create_checkout.php" class="form checkout-form" id="checkout-form" style="max-width:none;">
             <label for="code">Voucher Code</label>
             <?= html_text('code', 'maxlength="20" placeholder="e.g. WELCOME10" data-upper autocomplete="off"') ?>
             <span class="err" id="voucher-err"><?= $_err['code'] ?? '' ?></span>

@@ -39,9 +39,14 @@ $category = trim((string) (req('category') ?? ''));
 $min_price = req('min_price');
 $max_price = req('max_price');
 
-// Load available categories (tags)
-$cats_stm = $_db->query("SELECT DISTINCT tag FROM product WHERE tag IS NOT NULL AND tag != '' ORDER BY tag");
-$categories = $cats_stm->fetchAll(PDO::FETCH_COLUMN);
+// Load available categories from category table (fallback to distinct product tags)
+try {
+    $cats = get_categories(['active' => 1]);
+    $categories = array_map(function($c) { return $c->name; }, $cats);
+} catch (Exception $e) {
+    $cats_stm = $_db->query("SELECT DISTINCT tag FROM product WHERE tag IS NOT NULL AND tag != '' ORDER BY tag");
+    $categories = $cats_stm->fetchAll(PDO::FETCH_COLUMN);
+}
 
 // Build dynamic WHERE clauses
 $wheres = [];
@@ -148,7 +153,7 @@ include '../_head.php';
                 <?php if ($on_sale && $in_stock): ?>
                     <span class="badge sale-badge">SALE</span>
                 <?php endif ?>
-                <img src="/photos/<?= $img ?>"
+                <img src="<?= photo_src($img) ?>"
                      alt="<?= encode($p->name) ?>"
                      data-get="/product/detail.php?id=<?= $p->id ?>">
             </div>

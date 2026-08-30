@@ -89,7 +89,7 @@ include '../_head.php';
     <tbody>
         <?php foreach ($arr as $r): ?>
         <tr>
-            <td><img src="/photos/<?= photo_url($r->photo) ?>" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--line);"></td>
+            <td><img src="<?= photo_src($r->photo) ?>" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--line);"></td>
             <td><?= $r->id ?></td>
             <td><?= encode($r->name) ?></td>
             <td class="right"><?= $r->points ?></td>

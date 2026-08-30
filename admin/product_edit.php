@@ -9,6 +9,15 @@ $tag_items = [
     'BEST VALUE' => 'BEST VALUE',
     'LIMITED'    => 'LIMITED',
 ];
+// Replace tag items with categories from DB when available
+try {
+    $cats = $_db->query("SELECT name FROM category WHERE active = 1 ORDER BY sort_order, name")->fetchAll(PDO::FETCH_COLUMN);
+    if ($cats) {
+        $tag_items = array_combine($cats, $cats);
+    }
+} catch (Exception $e) {
+    // Category table may not exist yet — ignore
+}
 $roast_items = [
     'Light'  => 'Light',
     'Medium' => 'Medium',
@@ -244,6 +253,7 @@ include '../_head.php';
     <label for="photo">Product Image</label>
     <label class="upload">
         <?= html_file('photo', 'image/*') ?>
+        <img src="<?= photo_src($p->photo) ?>">
         <img src="/photos/<?= photo_url($p->photo) ?>">
     </label>
     <?= err('photo') ?>
