@@ -12,9 +12,10 @@ if (is_post()) {
         temp('info', 'Cannot delete — this reward has redemption history. Disable it instead.');
     }
     else {
-        $stm = $_db->prepare('SELECT photo FROM reward WHERE id = ?');
+        $stm = $_db->prepare('SELECT * FROM reward WHERE id = ?');
         $stm->execute([$id]);
-        $photo = $stm->fetchColumn();
+        $old = $stm->fetch();
+        $photo = $old->photo ?? null;
 
         $stm = $_db->prepare('DELETE FROM reward WHERE id = ?');
         $stm->execute([$id]);
@@ -23,7 +24,13 @@ if (is_post()) {
             unlink("../photos/$photo");
         }
 
-        audit('Rewards', 'Reward Deleted', "Deleted reward ID $id");
+        audit(
+            'Rewards',
+            'Reward Deleted',
+            "Deleted reward ID $id",
+            $old ? (array) $old : ['id' => $id],
+            null
+        );
         temp('info', 'Reward deleted successfully');
     }
 }

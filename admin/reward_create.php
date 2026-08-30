@@ -51,7 +51,22 @@ if (is_post()) {
         ');
         $stm->execute([$name, $description, $photo_name, $points, $stock, $active ? 1 : 0, $sort_order]);
 
-        audit('Rewards', 'Reward Created', "Created reward: $name ($points pts)");
+        $new_id = (int) $_db->lastInsertId();
+        audit(
+            'Rewards',
+            'Reward Created',
+            "Created reward: $name ($points pts)",
+            null,
+            [
+                'id' => $new_id,
+                'name' => $name,
+                'description' => $description,
+                'points' => (int) $points,
+                'stock' => (int) $stock,
+                'active' => $active ? 1 : 0,
+                'sort_order' => (int) $sort_order,
+            ]
+        );
         temp('info', 'Reward created successfully');
         redirect('reward_list.php');
     }
@@ -94,7 +109,7 @@ include '../_head.php';
     <label for="photo">Image</label>
     <label class="upload">
         <?= html_file('photo', 'image/*') ?>
-        <img src="/photos/0.jpg">
+        <img src="<?= photo_src('0.jpg') ?>">
     </label>
     <?= err('photo') ?>
 

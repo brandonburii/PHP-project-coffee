@@ -16,10 +16,13 @@ class SimplePager {
         $this->page = is_numeric($page) ? max((int)$page, 1) : 1;
 
         // Set [item count]
-        $q = preg_replace('/SELECT\s+.+?\s+FROM/is', 'SELECT COUNT(*) FROM', $query, 1);
+        // Build a safe count query by wrapping the original query as a subquery
+        // Remove any trailing ORDER BY to avoid syntax issues in some DB engines
+        $countSource = preg_replace('/ORDER\s+BY[\s\S]*$/i', '', $query);
+        $q = "SELECT COUNT(*) FROM (" . $countSource . ") AS _pcount";
         $stm = $_db->prepare($q);
         $stm->execute($params);
-        $this->item_count = $stm->fetchColumn();
+        $this->item_count = (int) $stm->fetchColumn();
 
         // Set [page count]
         $this->page_count = ceil($this->item_count / $this->limit);

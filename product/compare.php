@@ -72,7 +72,7 @@ include '../_head.php';
             <th>Feature</th>
             <?php foreach ($products as $p): ?>
                 <th style="text-align:center; min-width:160px;">
-                    <img src="/photos/<?= $p->photo ?>" alt=""
+                    <img src="<?= photo_src($p->photo) ?>" alt=""
                          style="width:80px;height:80px;object-fit:cover;border-radius:10px;display:block;margin:0 auto 8px;border:1px solid var(--line);">
                     <?= encode($p->name) ?>
                     <div style="margin-top:8px;">

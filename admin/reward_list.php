@@ -8,9 +8,19 @@ if (is_post()) {
     $btn = req('btn');
 
     if ($btn == 'toggle' && $id != '') {
+        $stm = $_db->prepare('SELECT active FROM reward WHERE id = ?');
+        $stm->execute([$id]);
+        $before_active = (int) $stm->fetchColumn();
+
         $stm = $_db->prepare('UPDATE reward SET active = 1 - active WHERE id = ?');
         $stm->execute([$id]);
-        audit('Rewards', 'Reward Toggled', "Toggled reward ID $id");
+        audit(
+            'Rewards',
+            'Reward Toggled',
+            "Toggled reward ID $id",
+            ['active' => $before_active],
+            ['active' => 1 - $before_active]
+        );
         temp('info', 'Reward status updated');
         redirect();
     }
@@ -79,7 +89,7 @@ include '../_head.php';
     <tbody>
         <?php foreach ($arr as $r): ?>
         <tr>
-            <td><img src="/photos/<?= photo_url($r->photo) ?>" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--line);"></td>
+            <td><img src="<?= photo_src($r->photo) ?>" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--line);"></td>
             <td><?= $r->id ?></td>
             <td><?= encode($r->name) ?></td>
             <td class="right"><?= $r->points ?></td>

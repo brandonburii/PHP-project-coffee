@@ -54,6 +54,8 @@ if (is_post()) {
         $photo_name = save_photo($photo, '../photos');
 
         $stm = $_db->prepare('INSERT INTO user (email, password, name, photo, role) VALUES (?, SHA1(?), ?, ?, ?)');
+        // Insert into database
+        $stm = $_db->prepare('INSERT INTO user (email, password, name, photo, role, active) VALUES (?, SHA1(?), ?, ?, ?, 1)');
         $stm->execute([$email, $password, $name, $photo_name, 'Member']);
 
         audit('Member', 'Registration', "New member registered: $email, Name: $name");
@@ -326,6 +328,15 @@ include '../_head.php';
 
         <section style="margin-top: 20px;">
             <button type="submit" id="submit-btn">Register</button>
+        <label class="upload">
+            <?= html_file('photo', 'image/*', 'required') ?>
+            <img src="<?= photo_src('0.jpg') ?>" alt="Preview">
+            <span class="upload-hint">Click to upload image</span>
+        </label>
+        <?= err('photo') ?>
+
+        <section>
+            <button>Register</button>
             <button type="reset">Reset</button>
             <button type="button" class="secondary" data-get="/login.php">Already have an account?</button>
         </section>
