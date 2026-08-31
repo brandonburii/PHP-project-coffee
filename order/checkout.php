@@ -45,6 +45,8 @@ $available_points = (int) $stm->fetchColumn();
 $code   = req('code', '');
 $points = req('points', 0);
 
+// Form submissions are handled by `order/create_checkout.php` which
+// creates a Stripe Checkout Session and redirects the user to Stripe.
 if (is_post()) {
     // Validate: voucher (optional)
     $voucher = null;
@@ -140,9 +142,60 @@ if (is_post()) {
 
             $_db->commit();
 
-            audit('Orders', 'Checkout completed', "Order ID $order_id | subtotal: $subtotal, discount: $discount, total: $total, points used: $points_used, earned: $earned, voucher: " . ($vcode ?? '-'));
+            $points_after = $available_points - $points_used + $earned;
+            audit(
+                'Orders',
+                'Checkout Completed',
+                "Order ID $order_id checkout completed",
+                [
+                    'order_id' => (int) $order_id,
+                    'subtotal' => (float) $subtotal,
+                    'discount' => 0.00,
+                    'total' => 0.00,
+                    'voucher_code' => null,
+                    'points_before' => (int) $available_points,
+                    'points_changed' => (int) (-$points_used + $earned),
+                    'points_after' => (int) $available_points,
+                    'reason' => 'Checkout',
+                ],
+                [
+                    'order_id' => (int) $order_id,
+                    'subtotal' => (float) $subtotal,
+                    'discount' => (float) $discount,
+                    'total' => (float) $total,
+                    'voucher_code' => $vcode,
+                    'points_before' => (int) $available_points,
+                    'points_changed' => (int) (-$points_used + $earned),
+                    'points_after' => (int) $points_after,
+                    'reason' => 'Checkout',
+                ],
+                ['keep_all' => true]
+            );
 
-            $_SESSION['user']->points = $available_points - $points_used + $earned;
+            audit(
+                'Reward Points',
+                'Points Earned/Used',
+                "Order ID $order_id points updated",
+                [
+                    'order_id' => (int) $order_id,
+                    'points_before' => (int) $available_points,
+                    'points_used' => 0,
+                    'points_earned' => 0,
+                    'points_after' => (int) $available_points,
+                    'reason' => 'Checkout',
+                ],
+                [
+                    'order_id' => (int) $order_id,
+                    'points_before' => (int) $available_points,
+                    'points_used' => (int) $points_used,
+                    'points_earned' => (int) $earned,
+                    'points_after' => (int) $points_after,
+                    'reason' => 'Checkout',
+                ],
+                ['keep_all' => true]
+            );
+
+            $_SESSION['user']->points = $points_after;
 
             set_cart();
             // Tell order detail page to show the review popup
@@ -190,9 +243,11 @@ include '../_head.php';
         <div class="checkout-list">
             <?php foreach ($items as $it):
                 $p = $it->product;
+                $img = photo_url($p->photo);
+                $imgFolder = is_file(__DIR__ . '/../products/' . $img) ? '/products/' : '/photos/';
             ?>
             <article class="checkout-item">
-                <img src="/photos/<?= photo_url($p->photo) ?>" alt="<?= encode($p->name) ?>">
+                <img src="<?= $imgFolder . rawurlencode($img) ?>" alt="<?= encode($p->name) ?>">
                 <div class="checkout-item-info">
                     <h3><?= encode($p->name) ?></h3>
                     <p>Qty <?= (int) $it->unit ?> · RM <?= sprintf('%.2f', $it->price) ?> each</p>
@@ -206,7 +261,7 @@ include '../_head.php';
     <aside class="card checkout-pay">
         <h2>Payment</h2>
 
-        <form method="post" class="form checkout-form" id="checkout-form" style="max-width:none;">
+        <form method="post" action="/order/create_checkout.php" class="form checkout-form" id="checkout-form" style="max-width:none;">
             <label for="code">Voucher Code</label>
             <?= html_text('code', 'maxlength="20" placeholder="e.g. WELCOME10" data-upper autocomplete="off"') ?>
             <span class="err" id="voucher-err"><?= $_err['code'] ?? '' ?></span>

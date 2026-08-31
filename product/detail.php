@@ -194,6 +194,12 @@ $in_wishlist = is_wishlisted($p->id);
 
 // Count total images
 $total_images = count($images);
+
+// Get all product images
+$product_images = get_product_images($p->name);
+if (empty($product_images)) {
+    $product_images = [photo_url($p->photo)];
+}
 ?>
  <style>
 .product-rating-summary {
@@ -490,6 +496,27 @@ $total_images = count($images);
             </div>
         <?php endif ?>
 
+    <div class="gallery-container">
+        <div class="gallery">
+            <img id="mainImage" src="<?= photo_src($product_images[0]) ?>" alt="<?= encode($p->name) ?>" class="main-image">
+            <?php if (count($product_images) > 1): ?>
+                <div class="gallery-nav">
+                    <button class="gallery-prev" onclick="prevImage()">❮</button>
+                    <button class="gallery-next" onclick="nextImage()">❯</button>
+                </div>
+            <?php endif ?>
+        </div>
+        
+        <?php if (count($product_images) > 1): ?>
+            <div class="gallery-thumbnails">
+                <?php foreach ($product_images as $index => $image): ?>
+                    <img src="<?= photo_src($image) ?>" alt="<?= encode($p->name) ?>"
+                         class="thumbnail <?= $index === 0 ? 'active' : '' ?>" 
+                         onclick="showImage(<?= $index ?>)"
+                         title="View image <?= $index + 1 ?>">
+                <?php endforeach ?>
+            </div>
+        <?php endif ?>
     </div>
 
 
@@ -943,6 +970,9 @@ $total_images = count($images);
                         >
                     </a>
 
+                    <img src="<?= photo_src($ap->photo) ?>"
+                         alt="<?= encode($ap->name) ?>"
+                         data-get="/product/detail.php?id=<?= $ap->id ?>">>
                 </div>
 
 
@@ -993,7 +1023,6 @@ $total_images = count($images);
 
 <!-- =========================================================
      CUSTOMER REVIEWS
-========================================================= -->
 
 <section class="product-reviews">
 
@@ -1244,3 +1273,38 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <?phpinclude '../_foot.php';
 ?>
+<script>
+let currentImageIndex = 0;
+const productImages = <?= json_encode(array_map(fn($i) => photo_src($i), $product_images)) ?>;
+
+function showImage(index) {
+    if (index < 0 || index >= productImages.length) return;
+    
+    currentImageIndex = index;
+    document.getElementById('mainImage').src = productImages[index];
+    
+    // Update thumbnail active state
+    document.querySelectorAll('.thumbnail').forEach((thumb, i) => {
+        thumb.classList.toggle('active', i === index);
+    });
+}
+
+function nextImage() {
+    let nextIndex = (currentImageIndex + 1) % productImages.length;
+    showImage(nextIndex);
+}
+
+function prevImage() {
+    let prevIndex = (currentImageIndex - 1 + productImages.length) % productImages.length;
+    showImage(prevIndex);
+}
+
+// Allow keyboard navigation
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') nextImage();
+    if (e.key === 'ArrowLeft') prevImage();
+});
+</script>
+
+<?php
+include '../_foot.php';

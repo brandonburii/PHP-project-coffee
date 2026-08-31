@@ -66,10 +66,12 @@ foreach ($cart as $id => $unit) {
         <div class="cart-items" id="cart-items">
             <?php foreach ($items as $it):
                 $p = $it->product;
+                $img = photo_url($p->photo);
+                $imgFolder = is_file(__DIR__ . '/../products/' . $img) ? '/products/' : '/photos/';
             ?>
             <article class="cart-item" data-id="<?= encode($p->id) ?>">
                 <a class="cart-item-img" href="/product/detail.php?id=<?= urlencode($p->id) ?>">
-                    <img src="/photos/<?= photo_url($p->photo) ?>" alt="<?= encode($p->name) ?>">
+                    <img src="<?= $imgFolder . rawurlencode($img) ?>" alt="<?= encode($p->name) ?>">
                 </a>
                 <div class="cart-item-body">
                     <div class="cart-item-top">

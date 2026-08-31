@@ -9,6 +9,15 @@ $tag_items = [
     'BEST VALUE' => 'BEST VALUE',
     'LIMITED'    => 'LIMITED',
 ];
+// Replace tag items with categories from DB when available
+try {
+    $cats = $_db->query("SELECT name FROM category WHERE active = 1 ORDER BY sort_order, name")->fetchAll(PDO::FETCH_COLUMN);
+    if ($cats) {
+        $tag_items = array_combine($cats, $cats);
+    }
+} catch (Exception $e) {
+    // Category table may not exist yet — ignore
+}
 $roast_items = [
     'Light'  => 'Light',
     'Medium' => 'Medium',
@@ -130,6 +139,20 @@ if (is_post()) {
     $delete_image_ids = req('delete_images') ?: [];
 
     if (!$_err) {
+        $before = [
+            'name' => $p->name,
+            'description' => $p->description,
+            'origin' => $p->origin,
+            'roast' => $p->roast,
+            'tag' => $p->tag,
+            'price' => (float) $p->price,
+            'sale_price' => $p->sale_price !== null ? (float) $p->sale_price : null,
+            'sale_start' => $p->sale_start,
+            'sale_end' => $p->sale_end,
+            'stock' => (int) $p->stock,
+            'photo' => $p->photo,
+        ];
+
         $photo_name = $p->photo;
 
         // Handle main photo upload
@@ -307,7 +330,25 @@ if (is_post()) {
             log_stock($id, 'edited', $p->stock, $stock);
         }
 
-        audit('Products', 'Product Updated', "Updated product ID: $id, Name: $name, Price: RM$price, Stock: $stock");
+        audit(
+            'Products',
+            'Product Updated',
+            "Updated product ID: $id, Name: $name, Price: RM$price, Stock: $stock",
+            $before,
+            [
+                'name' => $name,
+                'description' => $description,
+                'origin' => $origin ?: null,
+                'roast' => $roast ?: null,
+                'tag' => $tag ?: null,
+                'price' => (float) $price,
+                'sale_price' => $sale_price !== null ? (float) $sale_price : null,
+                'sale_start' => $sale_start ? date('Y-m-d H:i:s', strtotime($sale_start)) : null,
+                'sale_end' => $sale_end ? date('Y-m-d H:i:s', strtotime($sale_end)) : null,
+                'stock' => (int) $stock,
+                'photo' => $photo_name,
+            ]
+        );
 
         temp('info', 'Product updated successfully');
         redirect("product_edit.php?id=$id");
@@ -494,7 +535,8 @@ include '../_head.php';
     <label for="photo">Main Product Image</label>
     <label class="upload">
         <?= html_file('photo', 'image/*') ?>
-        <img src="/photos/<?= $p->photo ?>">
+        <img src="<?= photo_src($p->photo) ?>">
+        <img src="/photos/<?= photo_url($p->photo) ?>">
     </label>
     <small style="color: #666;">Replace the main image only</small>
     <?= err('photo') ?>

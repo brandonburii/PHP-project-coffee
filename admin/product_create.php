@@ -9,6 +9,15 @@ $tag_items = [
     'BEST VALUE' => 'BEST VALUE',
     'LIMITED'    => 'LIMITED',
 ];
+// Replace tag items with categories from DB when available
+try {
+    $cats = $_db->query("SELECT name FROM category WHERE active = 1 ORDER BY sort_order, name")->fetchAll(PDO::FETCH_COLUMN);
+    if ($cats) {
+        $tag_items = array_combine($cats, $cats);
+    }
+} catch (Exception $e) {
+    // Category table may not exist yet — ignore
+}
 $roast_items = [
     'Light'  => 'Light',
     'Medium' => 'Medium',
@@ -196,7 +205,25 @@ if (is_post()) {
 
         log_stock($id, 'added', 0, $stock);
 
-        audit('Products', 'Product Created', "Created product ID: $id, Name: $name, Price: RM$price, Stock: $stock");
+        audit(
+            'Products',
+            'Product Created',
+            "Created product ID: $id, Name: $name, Price: RM$price, Stock: $stock",
+            null,
+            [
+                'id' => $id,
+                'name' => $name,
+                'description' => $description,
+                'origin' => $origin ?: null,
+                'roast' => $roast ?: null,
+                'tag' => $tag ?: null,
+                'price' => (float) $price,
+                'sale_price' => $sale_price !== null ? (float) $sale_price : null,
+                'sale_start' => $sale_start ? date('Y-m-d H:i:s', strtotime($sale_start)) : null,
+                'sale_end' => $sale_end ? date('Y-m-d H:i:s', strtotime($sale_end)) : null,
+                'stock' => (int) $stock,
+            ]
+        );
 
         temp('info', 'Product created successfully');
         redirect('product_list.php');
@@ -293,7 +320,7 @@ include '../_head.php';
     <label for="photo">Main Product Image</label>
     <label class="upload">
         <?= html_file('photo', 'image/*') ?>
-        <img src="/photos/0.jpg">
+        <img src="<?= photo_src('0.jpg') ?>">
     </label>
     <?= err('photo') ?>
 
