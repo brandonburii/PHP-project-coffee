@@ -4,12 +4,75 @@ include '../_base.php';
 // Authorization
 auth('Member', 'Admin');
 
-// Get parameters
-$order_id = $_GET['order_id'] ?? $_POST['order_id'] ?? null;
-$product_id = $_GET['product_id'] ?? $_POST['product_id'] ?? null;
+$order_id = req('order_id');
+$product_id = req('product_id');
+$return_to = req('return_to', 'detail');
 
+// Handle form submission
+if (is_post()) {
+    $rating = req('rating');
+    $comment = req('comment', '');
+    $order_id = req('order_id');
+    $product_id = req('product_id');
+    $return_to = req('return_to', 'detail');
+
+    $errors = [];
+    if (!$order_id || !$product_id) {
+        $errors[] = 'Missing order or product information.';
+    }
+    if (!$rating || $rating < 1 || $rating > 5) {
+        $errors[] = 'Please select a valid rating (1-5 stars).';
+    }
+    if (trim($comment) === '') {
+        $errors[] = 'Please write a review.';
+    }
+
+  // Verify order belongs to member
+    if ($_user->role == 'Member' && empty($errors)) {
+        $stm = $_db->prepare('SELECT id FROM `order` WHERE id = ? AND user_id = ?');
+        $stm->execute([$order_id, $_user->id]);
+        if (!$stm->fetch()) {
+            $errors[] = 'Order not found.';
+        }
+    }
+
+    if (empty($errors)) {
+        $result = save_product_review($order_id, $product_id, $rating, $comment);
+
+        if (is_ajax_request()) {
+            header('Content-Type: application/json; charset=utf-8');
+            if ($result['ok']) {
+                temp('info', 'Review submitted successfully.');
+                echo json_encode(['ok' => true, 'message' => 'Review submitted successfully.']);
+            } else {
+                echo json_encode(['ok' => false, 'error' => $result['error'] ?? 'Unable to save review.']);
+            }
+            exit;
+        }
+
+        if ($result['ok']) {
+            temp('info', 'Review submitted successfully.');
+        } else {
+            temp('info', $result['error'] ?? 'Unable to save review.');
+        }
+
+        if ($return_to === 'history') {
+            redirect('/order/history.php');
+        }
+
+        redirect('/order/detail.php?id=' . $order_id);
+    }
+
+    if (is_ajax_request()) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'error' => implode(' ', $errors)]);
+        exit;
+    }
+}
+
+// Standalone review page (GET) — requires order + product
 if (!$order_id || !$product_id) {
-    $_SESSION['error'] = 'Missing order or product information.';
+    temp('info', 'Missing order or product information.');
     redirect('/order/history.php');
 }
 
@@ -19,37 +82,8 @@ if ($_user->role == 'Member') {
     $stm->execute([$order_id, $_user->id]);
     $order = $stm->fetch();
     if (!$order) {
-        $_SESSION['error'] = 'Order not found.';
+        temp('info', 'Order not found.');
         redirect('/order/history.php');
-    }
-}
-
-// Handle form submission
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $rating = $_POST['rating'] ?? null;
-    $comment = $_POST['comment'] ?? '';
-    $product_id = $_POST['product_id'] ?? null;
-    $order_id = $_POST['order_id'] ?? null;
-    
-    $errors = [];
-    if (!$rating || $rating < 1 || $rating > 5) {
-        $errors[] = 'Please select a valid rating (1-5 stars).';
-    }
-    if (empty($comment)) {
-        $errors[] = 'Please write a review.';
-    }
-    
-    if (empty($errors)) {
-        $result = save_product_review($order_id, $product_id, $rating, $comment);
-        
-        if ($result['ok']) {
-            $_SESSION['success'] = $result['message'];
-        } else {
-            $_SESSION['error'] = $result['error'];
-        }
-        
-        redirect('/order/detail.php?id=' . $order_id);
-        exit;
     }
 }
 
@@ -59,7 +93,7 @@ $stm->execute([$product_id]);
 $product = $stm->fetch();
 
 if (!$product) {
-    $_SESSION['error'] = 'Product not found.';
+    temp('info', 'Product not found.');
     redirect('/order/history.php');
 }
 
@@ -68,14 +102,7 @@ $stm = $_db->prepare('SELECT * FROM review WHERE order_id = ? AND product_id = ?
 $stm->execute([$order_id, $product_id, $_user->id]);
 $existing_review = $stm->fetch();
 
-// Get review text from correct column
-$review_text = '';
-if ($existing_review) {
-    $stm_col = $_db->query('DESCRIBE review');
-    $columns = $stm_col->fetchAll(PDO::FETCH_COLUMN);
-    $text_column = in_array('comment', $columns) ? 'comment' : 'review';
-    $review_text = $existing_review->$text_column ?? '';
-}
+$review_text = $existing_review ? review_row_text($existing_review) : '';
 
 $_title = 'Rate & Review Product';
 include '../_head.php';
@@ -212,7 +239,7 @@ include '../_head.php';
     <h2>Rate & Review</h2>
     
     <div class="product-info">
-        <img src="/photos/<?= photo_url($product->photo) ?>" alt="<?= encode($product->name) ?>">
+        <img src="<?= photo_src($product->photo) ?>" alt="<?= encode($product->name) ?>">
         <div class="details">
             <h3><?= encode($product->name) ?></h3>
             <div class="price">RM <?= number_format(product_price($product), 2) ?></div>
@@ -237,6 +264,7 @@ include '../_head.php';
     <form method="POST">
         <input type="hidden" name="order_id" value="<?= $order_id ?>">
         <input type="hidden" name="product_id" value="<?= $product_id ?>">
+        <input type="hidden" name="return_to" value="detail">
         
         <div class="form-group">
             <label>Your Rating</label>

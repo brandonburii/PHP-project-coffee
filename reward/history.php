@@ -24,7 +24,7 @@ $status = req('status');
 
 $params = [];
 $query = '
-    SELECT rr.*, r.name AS reward_name, r.photo
+    SELECT rr.*, r.name AS reward_name, r.photo, r.product_id
     FROM reward_redemption rr
     JOIN reward r ON r.id = rr.reward_id
     WHERE rr.user_id = ?
@@ -87,11 +87,14 @@ include '../_head.php';
         </tr>
     </thead>
     <tbody>
-        <?php foreach ($arr as $h): ?>
+        <?php foreach ($arr as $h):
+            $reward_img = reward_photo_src((object) ['photo' => $h->photo, 'product_id' => $h->product_id ?? null]);
+            $reward_placeholder = reward_photo_placeholder_src();
+        ?>
         <tr>
             <td>
                 <div style="display:flex;align-items:center;gap:10px;">
-                    <img src="<?= photo_src($h->photo) ?>" style="width:40px;height:40px;object-fit:cover;border-radius:8px;">
+                    <img src="<?= $reward_img ?>" alt="<?= encode($h->reward_name) ?>" onerror="this.onerror=null;this.src='<?= $reward_placeholder ?>';" style="width:40px;height:40px;object-fit:cover;border-radius:8px;">
                     <?= encode($h->reward_name) ?>
                 </div>
             </td>

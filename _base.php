@@ -138,42 +138,125 @@ function photo_src($photo, $fallback = '0.jpg', $folder = null) {
                 return '/' . $f . '/' . rawurlencode($photo);
             }
         }
+        if ($folder) {
+            foreach (['products', 'rewards', 'photos'] as $f) {
+                if ($f !== $folder && is_file(__DIR__ . '/' . $f . '/' . $photo)) {
+                    return '/' . $f . '/' . rawurlencode($photo);
+                }
+            }
+        }
     }
-    $fallbackFolder = $folder ?: 'photos';
-    return '/' . $fallbackFolder . '/' . $fallback;
+    foreach (['photos', 'products', 'rewards'] as $f) {
+        if (is_file(__DIR__ . '/' . $f . '/' . $fallback)) {
+            return '/' . $f . '/' . rawurlencode($fallback);
+        }
+    }
+    return '/photos/' . $fallback;
 }
 
-// Product photos for an order (one entry per order line item row)
-function order_item_photos($order_id) {
+function reward_photo_file_exists($photo) {
+    $photo = trim((string) $photo);
+    if ($photo === '' || $photo === 'null') {
+        return false;
+    }
+    foreach (['products', 'rewards', 'photos'] as $f) {
+        if (is_file(__DIR__ . '/' . $f . '/' . $photo)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function reward_photo_src($reward) {
+    $photo = trim((string) ($reward->photo ?? ''));
+    if ($photo !== '' && $photo !== 'null' && reward_photo_file_exists($photo)) {
+        return photo_src($photo, '0.jpg');
+    }
+
+    $product_id = trim((string) ($reward->product_id ?? ''));
+    if ($product_id !== '') {
+        global $_db;
+        $stm = $_db->prepare('SELECT photo FROM product WHERE id = ?');
+        $stm->execute([$product_id]);
+        $product_photo = trim((string) ($stm->fetchColumn() ?: ''));
+        if ($product_photo !== '' && reward_photo_file_exists($product_photo)) {
+            return photo_src($product_photo, '0.jpg');
+        }
+    }
+
+    return photo_src('0.jpg', '0.jpg');
+}
+
+function reward_photo_placeholder_src() {
+    return photo_src('0.jpg', '0.jpg');
+}
+
+// Order line items for preview (one row per product in the order)
+function order_item_lines($order_id) {
     global $_db;
 
     $stm = $_db->prepare('
-        SELECT p.photo
+        SELECT i.product_id, p.photo, p.name
         FROM item i
-        JOIN product p ON i.product_id = p.id
+        LEFT JOIN product p ON i.product_id = p.id
         WHERE i.order_id = ?
+        ORDER BY i.product_id
     ');
     $stm->execute([$order_id]);
 
-    return $stm->fetchAll(PDO::FETCH_COLUMN);
+    return $stm->fetchAll(PDO::FETCH_OBJ);
 }
 
-// Fixed-width order-history thumbnail strip: up to 3 images + optional +N badge
+// Fixed-width order-history product preview: up to 3 thumbnails + optional +N badge
 function order_image_preview_html($order_id) {
-    $photos = order_item_photos($order_id);
-    $total  = count($photos);
-    $show   = array_slice($photos, 0, 3);
-    $extra  = max(0, $total - 3);
+    $lines = order_item_lines($order_id);
+    $total = count($lines);
 
-    $html = '<div class="order-image-preview" aria-label="' . (int) $total . ' product line(s)">';
-    foreach ($show as $photo) {
-        $src = photo_src($photo);
-        $html .= '<img class="order-image-thumb" src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" alt="">';
+    if ($total === 0) {
+        return '';
     }
+
+    $detail_url = '/order/detail.php?id=' . (int) $order_id;
+    $max_thumbs = 3;
+    $thumb_html = [];
+    $thumb_count = 0;
+
+    foreach ($lines as $line) {
+        if ($thumb_count >= $max_thumbs) {
+            break;
+        }
+
+        // Deleted/missing product rows still count toward $total but show no thumb
+        if (!$line->product_id || !$line->name) {
+            continue;
+        }
+
+        $src = photo_src($line->photo ?? '');
+        $title = htmlspecialchars((string) $line->name, ENT_QUOTES, 'UTF-8');
+
+        $thumb_html[] =
+            '<a class="order-product-thumb-link" href="' . htmlspecialchars($detail_url, ENT_QUOTES, 'UTF-8') . '" title="' . $title . '">'
+            . '<img class="order-product-thumb" src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" alt="">'
+            . '</a>';
+
+        $thumb_count++;
+    }
+
+    // Additional products not shown as thumbnails (based on order item count)
+    $extra = max(0, $total - $thumb_count);
+
+    $html = '<div class="order-product-preview" aria-label="' . (int) $total . ' product(s) in order">';
+    $html .= '<div class="order-product-thumbnails">';
+    $html .= implode('', $thumb_html);
+
     if ($extra > 0) {
-        $html .= '<span class="order-image-more">+' . (int) $extra . '</span>';
+        $more_title = (int) $extra . ' more product(s) — view order detail';
+        $html .= '<a class="order-product-more" href="' . htmlspecialchars($detail_url, ENT_QUOTES, 'UTF-8') . '" title="' . htmlspecialchars($more_title, ENT_QUOTES, 'UTF-8') . '">'
+            . '+' . (int) $extra
+            . '</a>';
     }
-    $html .= '</div>';
+
+    $html .= '</div></div>';
 
     return $html;
 }
@@ -1468,6 +1551,47 @@ $_units = array_combine(range(1, 10), range(1, 10));
 // Product Ratings & Reviews
 // ============================================================================
 
+// Text column name in review table (`comment` or `review`)
+function review_text_column() {
+    static $col = null;
+
+    if ($col !== null) {
+        return $col;
+    }
+
+    global $_db;
+
+    try {
+        $columns = $_db->query('DESCRIBE review')->fetchAll(PDO::FETCH_COLUMN);
+        $col = in_array('comment', $columns, true) ? 'comment' : 'review';
+    } catch (Exception $e) {
+        $col = 'review';
+    }
+
+    return $col;
+}
+
+// Review body text from a row object/array
+function review_row_text($row) {
+    if (!$row) {
+        return '';
+    }
+
+    $col = review_text_column();
+
+    if (is_array($row)) {
+        return trim((string) ($row['review_text'] ?? $row[$col] ?? $row['comment'] ?? $row['review'] ?? ''));
+    }
+
+    return trim((string) ($row->review_text ?? $row->{$col} ?? $row->comment ?? $row->review ?? ''));
+}
+
+// AJAX request helper (modal / fetch submissions)
+function is_ajax_request() {
+    return strtolower($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'xmlhttprequest'
+        || req('ajax') === '1';
+}
+
 // Get product average rating and total reviews
 function get_product_rating($product_id) {
     global $_db;
@@ -1498,14 +1622,12 @@ function get_product_reviews($product_id, $limit = null) {
     global $_db;
     
     try {
-        // Check if column is 'comment' or 'review'
-        $stm = $_db->query('DESCRIBE review');
-        $columns = $stm->fetchAll(PDO::FETCH_COLUMN);
-        $text_column = in_array('comment', $columns) ? 'comment' : 'review';
+        $text_column = review_text_column();
         
         $sql = "
-            SELECT r.*, u.name as user_name, u.photo as user_photo,
-                   r.$text_column as review_text
+            SELECT r.id, r.order_id, r.product_id, r.user_id, r.rating, r.created_at,
+                   r.$text_column AS review_text,
+                   u.name AS user_name, u.photo AS user_photo
             FROM review r
             JOIN user u ON r.user_id = u.id
             WHERE r.product_id = ?
@@ -1689,13 +1811,12 @@ function save_product_review($order_id, $product_id, $rating, $comment) {
     }
 
     // Check if the column is 'comment' or 'review' in the table
+    $text_column = review_text_column();
+    $columns = [];
     try {
-        $stm = $_db->query('DESCRIBE review');
-        $columns = $stm->fetchAll(PDO::FETCH_COLUMN);
-        $text_column = in_array('comment', $columns) ? 'comment' : 'review';
+        $columns = $_db->query('DESCRIBE review')->fetchAll(PDO::FETCH_COLUMN);
     } catch (Exception $e) {
         $columns = [];
-        $text_column = 'comment';
     }
 
     // Check whether review already exists

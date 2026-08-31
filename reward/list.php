@@ -92,10 +92,12 @@ include '../_head.php';
         <div class="reward-grid">
             <?php foreach ($rewards as $r):
                 $can = $points >= $r->points && $r->stock > 0;
+                $reward_img = reward_photo_src($r);
+                $reward_placeholder = reward_photo_placeholder_src();
             ?>
             <article class="reward-card <?= $can ? '' : 'is-locked' ?>">
                 <div class="reward-card-media">
-                    <img src="<?= photo_src($r->photo, '0.jpg', 'rewards') ?>" alt="<?= encode($r->name) ?>">
+                    <img src="<?= $reward_img ?>" alt="<?= encode($r->name) ?>" onerror="this.onerror=null;this.src='<?= $reward_placeholder ?>';">
                     <?php if ($r->stock < 1): ?>
                         <span class="reward-badge out">Out of stock</span>
                     <?php elseif ($points < $r->points): ?>

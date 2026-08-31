@@ -412,9 +412,6 @@ include '../_head.php';
 >
 
 
-<!-- =========================================================
-     RECEIPT
-
 <div class="receipt-container">
 
     <div id="print-receipt">
@@ -848,9 +845,6 @@ include '../_head.php';
 </div>
 
 
-<!-- =========================================================
-     EMAIL POPUP
-
 <div
     id="email-modal"
     class="email-modal no-print"
@@ -960,13 +954,7 @@ include '../_head.php';
 <?php if (!empty($review_items)): ?>
 
 
-<!-- =========================================================
-     REVIEW POPUP
-
 <style>
-
-/* =========================================================
-   REVIEW MODAL
 
 #review-modal {
 
@@ -990,9 +978,6 @@ include '../_head.php';
     animation: reviewFadeIn 0.25s ease;
 }
 
-
-/* =========================================================
-   ANIMATIONS
 
 @keyframes reviewFadeIn {
 
@@ -1032,9 +1017,6 @@ include '../_head.php';
 }
 
 
-/* =========================================================
-   MODAL BOX
-
 #review-modal .review-modal-box {
 
     background: white;
@@ -1065,9 +1047,6 @@ include '../_head.php';
         0.25s ease;
 }
 
-
-/* =========================================================
-   CLOSE BUTTON
 
 #review-modal .review-modal-close {
 
@@ -1116,9 +1095,6 @@ include '../_head.php';
 }
 
 
-/* =========================================================
-   ICON
-
 #review-modal .review-modal-icon {
 
     text-align: center;
@@ -1128,9 +1104,6 @@ include '../_head.php';
     margin-bottom: 6px;
 }
 
-
-/* =========================================================
-   TITLE
 
 #review-modal .review-modal-box h2 {
 
@@ -1166,9 +1139,6 @@ include '../_head.php';
 }
 
 
-/* =========================================================
-   FORM GROUP
-
 #review-modal .form-group {
 
     margin-bottom: 16px;
@@ -1188,9 +1158,6 @@ include '../_head.php';
     color: #555;
 }
 
-
-/* =========================================================
-   PRODUCT SELECT
 
 #review-modal .form-group select {
 
@@ -1229,9 +1196,6 @@ include '../_head.php';
         rgba(0, 123, 255, 0.1);
 }
 
-
-/* =========================================================
-   STAR RATING
 
 #review-modal .star-rating-wrapper {
 
@@ -1300,9 +1264,6 @@ input:checked
 }
 
 
-/* =========================================================
-   RATING TEXT
-
 #review-modal .star-rating-text {
 
     font-size: 14px;
@@ -1326,9 +1287,6 @@ input:checked
     color: #ffc107;
 }
 
-
-/* =========================================================
-   TEXTAREA
 
 #review-modal .form-group textarea {
 
@@ -1383,9 +1341,6 @@ textarea::placeholder {
     color: #bbb;
 }
 
-
-/* =========================================================
-   REVIEW BUTTONS
 
 #review-modal .review-modal-buttons {
 
@@ -1466,9 +1421,6 @@ button {
 }
 
 
-/* =========================================================
-   RESPONSIVE
-
 @media (max-width: 500px) {
 
     #review-modal .review-modal-box {
@@ -1505,9 +1457,6 @@ button {
 
 </style>
 
-
-<!-- =========================================================
-     REVIEW MODAL HTML
 
 <div id="review-modal">
 
@@ -1809,14 +1758,7 @@ button {
 <?php endif; ?>
 
 
-<!-- =========================================================
-     JAVASCRIPT
-
 <script>
-
-
-/* =========================================================
-   PRINT RECEIPT
 
 function printReceipt() {
 
@@ -1824,9 +1766,6 @@ function printReceipt() {
 
 }
 
-
-/* =========================================================
-   EMAIL POPUP
 
 function openEmailPopup() {
 
@@ -1862,9 +1801,6 @@ function openEmailPopup() {
 }
 
 
-/* =========================================================
-   CLOSE EMAIL POPUP
-
 function closeEmailPopup() {
 
     const modal =
@@ -1893,9 +1829,6 @@ function closeEmailPopup() {
 
 }
 
-
-/* =========================================================
-   SEND RECEIPT USING MAILTO
 
 function submitEmailReceipt() {
 
@@ -2191,9 +2124,6 @@ function submitEmailReceipt() {
 }
 
 
-/* =========================================================
-   EMAIL POPUP - CLICK OUTSIDE
-
 const emailModal =
     document.getElementById(
         'email-modal'
@@ -2220,9 +2150,6 @@ if (emailModal) {
 }
 
 
-/* =========================================================
-   EMAIL POPUP - ESCAPE
-
 document.addEventListener(
     'keydown',
     function(event) {
@@ -2240,9 +2167,6 @@ document.addEventListener(
     }
 );
 
-
-/* =========================================================
-   STAR RATING
 
 document
     .querySelectorAll(
@@ -2297,9 +2221,6 @@ document
     );
 
 
-/* =========================================================
-   CLOSE REVIEW POPUP
-
 function closeReviewPopup() {
 
     const modal =
@@ -2316,9 +2237,6 @@ function closeReviewPopup() {
 
 }
 
-
-/* =========================================================
-   REVIEW POPUP - CLICK OUTSIDE
 
 document.addEventListener(
     'click',
@@ -2342,9 +2260,6 @@ document.addEventListener(
     }
 );
 
-
-/* =========================================================
-   REVIEW FORM VALIDATION
 
 function validateReviewForm() {
 

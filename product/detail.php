@@ -1028,10 +1028,8 @@ $total_images = count($images);
                         <?php endfor ?>
                     </div>
 
-                    <p>
-                        <?= nl2br(
-                            encode($review->review_text ?? $review->comment ?? '')
-                        ) ?>
+                    <p class="review-body">
+                        <?= nl2br(encode(review_row_text($review))) ?>
                     </p>
 
                 </article>
