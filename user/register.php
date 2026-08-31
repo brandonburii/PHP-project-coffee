@@ -91,6 +91,12 @@ include '../_head.php';
     margin-bottom: 10px;
     width: 100%;
     box-sizing: border-box;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.upload.dragging {
+    border-color: #5c7785;
+    background: #f0f4f6;
 }
 
 .upload input[type="file"] {
@@ -544,6 +550,32 @@ include '../_head.php';
         };
         img.src = tempCanvas.toDataURL('image/jpeg');
     });
+
+    // --- Drag and Drop Logic ---
+    const uploadArea = document.getElementById('upload-area');
+    if (uploadArea) {
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragging');
+        });
+
+        uploadArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragging');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragging');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                const event = new Event('change');
+                fileInput.dispatchEvent(event);
+            }
+        });
+    }
 
     // --- File Upload Logic ---
     fileInput.addEventListener('change', function(e) {

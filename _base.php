@@ -1037,15 +1037,38 @@ $_units = array_combine(range(1, 10), range(1, 10));
 // ============================================================================
 
 if (!isset($_SESSION['user']) && isset($_COOKIE['remember_token'])) {
-    $token = $_COOKIE['remember_token'];
-    
-    $stm = $_db->prepare('SELECT * FROM user WHERE remember_token = ?');
-    $stm->execute([$token]);
-    $u = $stm->fetch();
+    // Check if lockout is active
+    $is_locked = false;
+    if (isset($_SESSION['lockout_time'])) {
+        $time_passed = time() - $_SESSION['lockout_time'];
+        if ($time_passed < 180) {
+            $is_locked = true;
+        } else {
+            unset($_SESSION['lockout_time']);
+            $_SESSION['login_attempts'] = 0;
+        }
+    }
 
-    if ($u) {
-        // Log the user in automatically
-        login($u); 
+    if (!$is_locked) {
+        $token = $_COOKIE['remember_token'];
+        
+        $stm = $_db->prepare('SELECT * FROM user WHERE remember_token = ?');
+        $stm->execute([$token]);
+        $u = $stm->fetch();
+
+        if ($u) {
+            if ((int)$u->active) {
+                login($u);
+                audit('Auth', 'Remember Me Login', "Automatically logged in using remember token for: {$u->email}");
+            } else {
+                setcookie('remember_token', '', time() - 3600, '/');
+                $stm = $_db->prepare('UPDATE user SET remember_token = NULL WHERE id = ?');
+                $stm->execute([$u->id]);
+                audit('Auth', 'Remember Me Revoked', "Revoked remember token for disabled user: {$u->email}");
+            }
+        }
+    }
+} 
 // ============================================================================
 // Category Maintenance Helpers
 // ============================================================================

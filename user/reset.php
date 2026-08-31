@@ -21,11 +21,14 @@ if (is_post()) {
         if (!$u) {
             $_err['email'] = 'Email not found';
         }
+        else if ((int)$u->active == 0) {
+            $_err['email'] = 'Account disabled';
+        }
     }
 
     if (!$_err) {
-        // 1. Generate a 6-digit OTP instead of a long token string
-        $otp = sprintf("%06d", mt_rand(1, 999999));
+        // 1. Generate a secure 6-digit OTP instead of a long token string
+        $otp = sprintf("%06d", random_int(0, 999999));
         $expire = date('Y-m-d H:i:s', strtotime('+10 minutes'));
 
         // Delete any existing tokens for this user
@@ -38,8 +41,9 @@ if (is_post()) {
 
         audit('Auth', 'Password Reset Request', "OTP generated for email: $email");
 
-        // 2. Save the email in a session so the next page knows who is verifying the code
+        // 2. Save the email and reset attempts in session so the next page knows who is verifying the code
         $_SESSION['reset_email'] = $email;
+        $_SESSION['otp_attempts'] = 0;
 
         // 3. Send email containing the OTP
         try {
