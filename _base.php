@@ -111,6 +111,10 @@ function photo_url($photo, $fallback = '0.jpg') {
     if (is_file($path)) {
         return $photo;
     }
+    $path = __DIR__ . '/rewards/' . $photo;
+    if (is_file($path)) {
+        return $photo;
+    }
     $path = __DIR__ . '/photos/' . $photo;
     if (is_file($path)) {
         return $photo;
@@ -118,18 +122,20 @@ function photo_url($photo, $fallback = '0.jpg') {
     return $fallback;
 }
 
-// Return the web path of a photo, checking products/ then photos/ folders
-function photo_src($photo, $fallback = '0.jpg') {
+// Return the web path of a photo, checking products/ then rewards/ then photos/ folders.
+// Pass $folder ('products'|'rewards'|'photos') to force a specific folder first.
+function photo_src($photo, $fallback = '0.jpg', $folder = null) {
     $photo = trim((string) $photo);
     if ($photo != '' && $photo != 'null') {
-        if (is_file(__DIR__ . '/products/' . $photo)) {
-            return '/products/' . rawurlencode($photo);
-        }
-        if (is_file(__DIR__ . '/photos/' . $photo)) {
-            return '/photos/' . rawurlencode($photo);
+        $folders = $folder ? [$folder] : ['products', 'rewards', 'photos'];
+        foreach ($folders as $f) {
+            if (is_file(__DIR__ . '/' . $f . '/' . $photo)) {
+                return '/' . $f . '/' . rawurlencode($photo);
+            }
         }
     }
-    return '/photos/' . $fallback;
+    $fallbackFolder = $folder ?: 'photos';
+    return '/' . $fallbackFolder . '/' . $fallback;
 }
 
 // Get all product images by product name
@@ -147,6 +153,29 @@ function get_product_images($product_name) {
         foreach ($files as $file) {
             // Match files that start with product name (case-insensitive)
             if (stripos($file, $product_name) === 0) {
+                $images[] = $file;
+            }
+        }
+    }
+    
+    sort($images);
+    return $images;
+}
+
+// Get all reward images by reward name
+function get_reward_images($reward_name) {
+    $reward_name = trim((string) $reward_name);
+    if ($reward_name == '') {
+        return [];
+    }
+    
+    $folder = __DIR__ . '/rewards/';
+    $images = [];
+    
+    if (is_dir($folder)) {
+        $files = scandir($folder);
+        foreach ($files as $file) {
+            if (stripos($file, $reward_name) === 0) {
                 $images[] = $file;
             }
         }
@@ -1045,7 +1074,10 @@ if (!isset($_SESSION['user']) && isset($_COOKIE['remember_token'])) {
 
     if ($u) {
         // Log the user in automatically
-        login($u); 
+        login($u);
+    }
+}
+
 // ============================================================================
 // Category Maintenance Helpers
 // ============================================================================

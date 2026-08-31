@@ -46,7 +46,7 @@ if (is_post()) {
         else if (!is_email($email)) {
             $_err['email'] = 'Invalid email';
         }
-
+    }
         // Validate: password
         if ($password == '') {
             $_err['password'] = 'Required';
@@ -150,7 +150,7 @@ if (is_post()) {
         $_err['email'] = "Account locked. Please wait <strong id='lockout-timer'>$time_str</strong> to try again. Or Reset Password.";
     }
 }
-
+}  
 // ----------------------------------------------------------------------------
 
 $_title = 'Login';
