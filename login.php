@@ -182,7 +182,7 @@ $is_locked_out = ($remaining_seconds > 0);
     
     <?php if ($is_locked_out): ?>
         <div style="margin-top: 15px; text-align: center; font-size: 14px;">
-            Don't have an account? <a href="/register.php" style="color: #5c7785; font-weight: bold;">Register here</a>
+            Don't have an account? <a href="user/register.php" style="color: #5c7785; font-weight: bold;">Register here</a>
         </div>
     <?php endif; ?>
 </form>
