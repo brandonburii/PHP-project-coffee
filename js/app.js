@@ -10,6 +10,30 @@
 
 $(() => {
 
+    // Admin sidebar: remember expanded groups (current page's group stays open)
+    const $adminNav = $('nav.nav-admin');
+    if ($adminNav.length) {
+        $adminNav.find('details.nav-group').each(function () {
+            const el = this;
+            const key = 'admin-nav-group-' + (el.dataset.group || '');
+            const forced = el.dataset.forceOpen === '1';
+            if (!forced) {
+                const saved = localStorage.getItem(key);
+                if (saved === '1') el.open = true;
+                if (saved === '0') el.open = false;
+            } else {
+                el.open = true;
+            }
+            $(el).on('toggle', function () {
+                if (el.dataset.forceOpen === '1' && !el.open) {
+                    localStorage.setItem(key, '0');
+                    return;
+                }
+                localStorage.setItem(key, el.open ? '1' : '0');
+            });
+        });
+    }
+
     // Autofocus
     $('form :input:not(button):first').focus();
     $('.err:first').prev().focus();

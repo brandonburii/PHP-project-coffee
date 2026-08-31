@@ -43,22 +43,94 @@
     </header>
 
     <div id="wrapper">
-        <nav>
-            <?php if ($_user?->role == 'Admin'): ?>
+        <nav<?= $_user?->role == 'Admin' ? ' class="nav-admin"' : '' ?>>
+            <?php if ($_user?->role == 'Admin'):
+                $nav_current = strtok($_SERVER['REQUEST_URI'] ?? '', '?');
+                $nav_chevron = "<svg class='nav-chevron' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'><polyline points='6 9 12 15 18 9'></polyline></svg>";
+                $nav_groups = [
+                    'management' => ['/admin/member_', '/admin/admin_'],
+                    'catalog'    => ['/admin/product_', '/admin/category_'],
+                    'inventory'  => ['/admin/stock_', '/admin/order_stock'],
+                    'sales'      => ['/order/', '/admin/reports'],
+                    'marketing'  => ['/admin/voucher_', '/admin/reward_'],
+                    'system'     => ['/admin/audit_'],
+                ];
+                $nav_open = [];
+                foreach ($nav_groups as $g => $prefixes) {
+                    $nav_open[$g] = false;
+                    foreach ($prefixes as $prefix) {
+                        if (str_starts_with($nav_current, $prefix)) {
+                            $nav_open[$g] = true;
+                            break;
+                        }
+                    }
+                }
+            ?>
                 <a href="/" class="<?= is_active('/') ?>"><?= icon('dashboard') ?><span>Dashboard</span></a>
-                <a href="/admin/member_list.php" class="<?= is_active('/admin/member_list.php') ?>"><?= icon('members') ?><span>Member Maintenance</span></a>
-                <a href="/admin/admin_list.php" class="<?= is_active('/admin/admin_list.php') ?>"><?= icon('members') ?><span>Admin Management</span></a>
-                <a href="/admin/product_list.php" class="<?= is_active('/admin/product_list.php') ?>"><?= icon('products') ?><span>Product Maintenance</span></a>
-                <a href="/admin/category_list.php" class="<?= is_active('/admin/category_list.php') ?>"><?= icon('products') ?><span>Category Maintenance</span></a>
-                <a href="/admin/stock_history.php" class="<?= is_active('/admin/stock_history.php') ?>"><?= icon('stock') ?><span>Stock History</span></a>
-                <a href="/admin/voucher_list.php" class="<?= is_active('/admin/voucher_list.php') ?>"><?= icon('voucher') ?><span>Voucher Maintenance</span></a>
-                <a href="/admin/reward_list.php" class="<?= is_active('/admin/reward_list.php') ?>"><?= icon('rewards') ?><span>Reward Maintenance</span></a>
-                <a href="/order/history.php" class="<?= is_active('/order/history.php') ?>"><?= icon('orders') ?><span>Order Management</span></a>
-                <a href="/admin/order_stock.php" class="<?= is_active('/admin/order_stock.php') ?>"><?= icon('stock') ?><span>Order Stock</span></a>
-                <a href="/admin/audit_log.php" class="<?= is_active('/admin/audit_log.php') ?>"><?= icon('reports') ?><span>Audit Log</span></a>
-                <a href="/admin/reports.php" class="<?= is_active('/admin/reports.php') ?>"><?= icon('reports') ?><span>Sales Reports</span></a>
-                <a href="/user/profile.php" class="<?= is_active('/user/profile.php') ?>"><?= icon('profile') ?><span>Profile</span></a>
-                <a href="/logout.php"><?= icon('logout') ?><span>Logout</span></a>
+
+                <details class="nav-group" data-group="management"<?= $nav_open['management'] ? ' open data-force-open="1"' : '' ?>>
+                    <summary>Management <?= $nav_chevron ?></summary>
+                    <div class="nav-group-body">
+                        <div class="nav-group-inner">
+                            <a href="/admin/member_list.php" class="<?= is_active_match(['/admin/member_']) ?>"><?= icon('members') ?><span>Member Maintenance</span></a>
+                            <a href="/admin/admin_list.php" class="<?= is_active_match(['/admin/admin_']) ?>"><?= icon('members') ?><span>Admin Management</span></a>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="nav-group" data-group="catalog"<?= $nav_open['catalog'] ? ' open data-force-open="1"' : '' ?>>
+                    <summary>Catalog <?= $nav_chevron ?></summary>
+                    <div class="nav-group-body">
+                        <div class="nav-group-inner">
+                            <a href="/admin/product_list.php" class="<?= is_active_match(['/admin/product_']) ?>"><?= icon('products') ?><span>Product Maintenance</span></a>
+                            <a href="/admin/category_list.php" class="<?= is_active_match(['/admin/category_']) ?>"><?= icon('products') ?><span>Category Maintenance</span></a>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="nav-group" data-group="inventory"<?= $nav_open['inventory'] ? ' open data-force-open="1"' : '' ?>>
+                    <summary>Inventory <?= $nav_chevron ?></summary>
+                    <div class="nav-group-body">
+                        <div class="nav-group-inner">
+                            <a href="/admin/stock_history.php" class="<?= is_active_match(['/admin/stock_']) ?>"><?= icon('stock') ?><span>Stock History</span></a>
+                            <a href="/admin/order_stock.php" class="<?= is_active_match(['/admin/order_stock']) ?>"><?= icon('stock') ?><span>Order Stock</span></a>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="nav-group" data-group="sales"<?= $nav_open['sales'] ? ' open data-force-open="1"' : '' ?>>
+                    <summary>Sales &amp; Orders <?= $nav_chevron ?></summary>
+                    <div class="nav-group-body">
+                        <div class="nav-group-inner">
+                            <a href="/order/history.php" class="<?= is_active_match(['/order/history.php', '/order/detail.php']) ?>"><?= icon('orders') ?><span>Order Management</span></a>
+                            <a href="/admin/reports.php" class="<?= is_active_match(['/admin/reports']) ?>"><?= icon('reports') ?><span>Sales Reports</span></a>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="nav-group" data-group="marketing"<?= $nav_open['marketing'] ? ' open data-force-open="1"' : '' ?>>
+                    <summary>Marketing <?= $nav_chevron ?></summary>
+                    <div class="nav-group-body">
+                        <div class="nav-group-inner">
+                            <a href="/admin/voucher_list.php" class="<?= is_active_match(['/admin/voucher_']) ?>"><?= icon('voucher') ?><span>Voucher Maintenance</span></a>
+                            <a href="/admin/reward_list.php" class="<?= is_active_match(['/admin/reward_']) ?>"><?= icon('rewards') ?><span>Reward Maintenance</span></a>
+                        </div>
+                    </div>
+                </details>
+
+                <details class="nav-group" data-group="system"<?= $nav_open['system'] ? ' open data-force-open="1"' : '' ?>>
+                    <summary>System <?= $nav_chevron ?></summary>
+                    <div class="nav-group-body">
+                        <div class="nav-group-inner">
+                            <a href="/admin/audit_log.php" class="<?= is_active_match(['/admin/audit_']) ?>"><?= icon('reports') ?><span>Audit Log</span></a>
+                        </div>
+                    </div>
+                </details>
+
+                <div class="nav-footer">
+                    <a href="/user/profile.php" class="<?= is_active('/user/profile.php') ?>"><?= icon('profile') ?><span>Profile</span></a>
+                    <a href="/logout.php"><?= icon('logout') ?><span>Logout</span></a>
+                </div>
             <?php elseif ($_user?->role == 'Member'): ?>
                 <a href="/" class="<?= is_active('/') ?>"><?= icon('home') ?><span>Home</span></a>
                 <a href="/product/list.php" class="<?= is_active('/product/list.php') ?>"><?= icon('products') ?><span>Products</span></a>

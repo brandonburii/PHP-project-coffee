@@ -386,6 +386,23 @@ function is_active($path) {
     return $current === $path ? 'active' : '';
 }
 
+// Return 'active' when the current URL matches any path or prefix (admin child pages)
+function is_active_match($patterns) {
+    $current = strtok($_SERVER['REQUEST_URI'] ?? '', '?');
+    foreach ((array) $patterns as $pattern) {
+        if ($pattern === '/') {
+            if ($current === '/' || $current === '/index.php') {
+                return 'active';
+            }
+            continue;
+        }
+        if ($current === $pattern || str_starts_with($current, $pattern)) {
+            return 'active';
+        }
+    }
+    return '';
+}
+
 // Return an inline SVG line icon (presentation helper for nav/buttons)
 function icon($name) {
     $p = [
