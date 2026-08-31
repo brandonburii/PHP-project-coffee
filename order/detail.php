@@ -402,17 +402,50 @@ include '../_head.php';
 ?>
 
 
-<!-- =========================================================
-     APP CSS
-========================================================= -->
+<?php
+$order_status = $o->status ?? 'completed';
+$payment_labels = [
+    'completed' => 'Paid',
+    'pending'   => 'Pending Cancellation',
+    'cancelled' => 'Cancelled',
+    'refunded'  => 'Refunded',
+];
+$payment_label = $payment_labels[$order_status] ?? ucfirst($order_status);
+$item_placeholder_src = photo_src('0.jpg', '0.jpg');
+?>
 
-<link
-    rel="stylesheet"
-    href="/css/app.css"
->
+<div class="order-detail-page">
 
+<header class="order-detail-header">
+    <div class="order-detail-header-top">
+        <h1>Order #<?= encode($o->id) ?></h1>
+        <?php if ($order_status === 'pending'): ?>
+            <span class="badge-status process">Pending Cancellation</span>
+        <?php elseif ($order_status === 'cancelled'): ?>
+            <span class="badge-status danger">Cancelled</span>
+        <?php elseif ($order_status === 'refunded'): ?>
+            <span class="badge-status neutral">Refunded</span>
+        <?php else: ?>
+            <span class="badge-status success">Completed</span>
+        <?php endif ?>
+    </div>
+    <dl class="order-detail-meta">
+        <div>
+            <dt>Date &amp; Time</dt>
+            <dd><?= encode($o->datetime) ?></dd>
+        </div>
+        <div>
+            <dt>Payment Status</dt>
+            <dd><?= encode($payment_label) ?></dd>
+        </div>
+        <div>
+            <dt>Number of Items</dt>
+            <dd><?= encode($o->count) ?></dd>
+        </div>
+    </dl>
+</header>
 
-<div class="receipt-container">
+<div class="receipt-container order-detail-card">
 
     <div id="print-receipt">
 
@@ -531,96 +564,47 @@ include '../_head.php';
                  PURCHASED ITEMS
             ================================================== -->
 
-            <h3>
-                Purchased Items
-            </h3>
+            <h3 class="order-items-heading">Purchased Items</h3>
 
+            <section class="order-items" aria-label="Purchased items">
 
-            <table class="receipt-items">
+                <?php foreach ($arr as $i):
+                    $photo_name = trim((string) ($i->photo ?? ''));
+                    $has_thumb = false;
+                    if ($photo_name !== '' && $photo_name !== 'null') {
+                        foreach (['products', 'rewards', 'photos'] as $folder) {
+                            if (is_file(__DIR__ . '/../' . $folder . '/' . $photo_name)) {
+                                $has_thumb = true;
+                                break;
+                            }
+                        }
+                    }
+                    $thumb_src = $has_thumb ? photo_src($i->photo, '0.jpg') : $item_placeholder_src;
+                ?>
+                <article class="order-item">
+                    <div class="order-item-thumb">
+                        <?php if ($has_thumb): ?>
+                            <img
+                                src="<?= $thumb_src ?>"
+                                alt="<?= encode($i->name) ?>"
+                                onerror="this.onerror=null;this.remove();this.parentElement.querySelector('.order-item-thumb-placeholder').hidden=false;"
+                            >
+                        <?php endif ?>
+                        <span class="order-item-thumb-placeholder" <?= $has_thumb ? 'hidden' : '' ?>>No Image</span>
+                    </div>
+                    <div class="order-item-body">
+                        <div class="order-item-name"><?= encode($i->name) ?></div>
+                        <div class="order-item-meta">
+                            RM <?= sprintf('%.2f', $i->price) ?> &times; <?= encode($i->unit) ?>
+                        </div>
+                    </div>
+                    <div class="order-item-subtotal">
+                        RM <?= sprintf('%.2f', $i->subtotal) ?>
+                    </div>
+                </article>
+                <?php endforeach ?>
 
-                <tr>
-
-                    <th>
-                        Product
-                    </th>
-
-                    <th>
-                        Unit
-                    </th>
-
-                    <th>
-                        Price (RM)
-                    </th>
-
-                    <th>
-                        Subtotal (RM)
-                    </th>
-
-                </tr>
-
-
-                <?php foreach ($arr as $i): ?>
-
-                    <tr>
-
-                        <td>
-                            <?= encode($i->name) ?>
-                        </td>
-
-
-                        <td>
-                            <?= encode($i->unit) ?>
-                        </td>
-
-
-                        <td>
-                            <?= sprintf(
-                                '%.2f',
-                                $i->price
-                            ) ?>
-                        </td>
-
-
-                        <td>
-                            <?= sprintf(
-                                '%.2f',
-                                $i->subtotal
-                            ) ?>
-                        </td>
-
-                    </tr>
-
-                <?php endforeach; ?>
-
-
-                <!-- Total -->
-
-                <tr>
-
-                    <th>
-                        Total Items
-                    </th>
-
-                    <th>
-                        <?= encode($o->count) ?>
-                    </th>
-
-                    <th></th>
-
-                    <th>
-
-                        RM
-
-                        <?= sprintf(
-                            '%.2f',
-                            $o->total
-                        ) ?>
-
-                    </th>
-
-                </tr>
-
-            </table>
+            </section>
 
 
             <!-- =================================================
@@ -794,55 +778,65 @@ include '../_head.php';
     </div>
 
 
-    <!-- =========================================================
-         BUTTONS
-    ========================================================== -->
-
-    <div class="receipt-buttons no-print">
-
-
-        <!-- Send Email -->
+    <div class="order-detail-actions no-print">
 
         <button
             type="button"
             class="email-button"
             onclick="openEmailPopup()"
         >
-
-            📧 Send E-Receipt
-
+            Send E-Receipt
         </button>
-
-
-        <!-- Print -->
 
         <button
             type="button"
             class="print-button"
             onclick="printReceipt()"
         >
-
-            🖨️ Print E-Receipt
-
+            Print E-Receipt
         </button>
-
-
-        <!-- History -->
 
         <button
             type="button"
-            class="history-button"
+            class="history-button btn-history"
             data-get="history.php"
         >
-
-            ← History
-
+            &larr; Back to Order History
         </button>
-
 
     </div>
 
 </div>
+
+<?php if ($_user->role == 'Admin' && ($order_status === 'pending')): ?>
+<section class="order-actions-card no-print">
+    <h2>Order Actions</h2>
+    <form method="post" onsubmit="return confirm('Approve this cancellation?&#10;Stock will be restocked and points refunded.');">
+        <input type="hidden" name="action" value="approve_cancel">
+        <div class="order-actions-buttons">
+            <button type="submit">Approve Cancellation</button>
+        </div>
+    </form>
+    <form method="post" onsubmit="return confirm('Reject this cancellation request?&#10;The order will be restored to completed.');" style="margin-top:12px;">
+        <input type="hidden" name="action" value="reject_cancel">
+        <div class="order-actions-buttons">
+            <button type="submit" class="danger">Reject Cancellation</button>
+        </div>
+    </form>
+</section>
+<?php elseif ($_user->role != 'Admin' && $o->user_id == $_user->id && is_order_cancellable($o->id)): ?>
+<section class="order-actions-card no-print">
+    <h2>Order Actions</h2>
+    <form method="post" onsubmit="return confirm('Request to cancel this order?&#10;It will be pending until an admin approves.');">
+        <input type="hidden" name="action" value="cancel">
+        <label for="cancel-reason">Reason for cancellation (optional)</label>
+        <input type="text" id="cancel-reason" name="reason" maxlength="255" placeholder="Optional reason">
+        <div class="order-actions-buttons">
+            <button type="submit" class="danger">Request Cancellation</button>
+        </div>
+    </form>
+</section>
+<?php endif ?>
 
 
 <div
@@ -954,508 +948,6 @@ include '../_head.php';
 <?php if (!empty($review_items)): ?>
 
 
-<style>
-
-#review-modal {
-
-    position: fixed;
-
-    top: 0;
-    left: 0;
-
-    width: 100%;
-    height: 100%;
-
-    background: rgba(0, 0, 0, 0.55);
-
-    z-index: 99999;
-
-    display: flex;
-
-    align-items: center;
-    justify-content: center;
-
-    animation: reviewFadeIn 0.25s ease;
-}
-
-
-@keyframes reviewFadeIn {
-
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
-
-}
-
-
-@keyframes reviewSlideUp {
-
-    from {
-
-        opacity: 0;
-
-        transform:
-            translateY(30px)
-            scale(0.96);
-
-    }
-
-    to {
-
-        opacity: 1;
-
-        transform:
-            translateY(0)
-            scale(1);
-
-    }
-
-}
-
-
-#review-modal .review-modal-box {
-
-    background: white;
-
-    border-radius: 16px;
-
-    padding:
-        30px
-        32px
-        28px;
-
-    max-width: 440px;
-
-    width: 92%;
-
-    max-height: 90vh;
-
-    overflow-y: auto;
-
-    position: relative;
-
-    box-shadow:
-        0 24px 60px
-        rgba(0, 0, 0, 0.3);
-
-    animation:
-        reviewSlideUp
-        0.25s ease;
-}
-
-
-#review-modal .review-modal-close {
-
-    position: absolute;
-
-    top: 12px;
-    right: 16px;
-
-    background: none;
-
-    border: none;
-
-    font-size: 28px;
-
-    color: #aaa;
-
-    cursor: pointer;
-
-    padding: 0;
-
-    line-height: 1;
-
-    box-shadow: none;
-
-    width: 32px;
-    height: 32px;
-
-    display: flex;
-
-    align-items: center;
-    justify-content: center;
-
-    border-radius: 50%;
-}
-
-
-#review-modal .review-modal-close:hover {
-
-    background: #f5f5f5;
-
-    color: #333;
-
-    transform: none;
-
-    box-shadow: none;
-}
-
-
-#review-modal .review-modal-icon {
-
-    text-align: center;
-
-    font-size: 44px;
-
-    margin-bottom: 6px;
-}
-
-
-#review-modal .review-modal-box h2 {
-
-    text-align: center;
-
-    margin:
-        0
-        0
-        4px
-        0;
-
-    font-size: 20px;
-
-    font-weight: 700;
-
-    color: #222;
-}
-
-
-#review-modal .review-description {
-
-    text-align: center;
-
-    color: #888;
-
-    font-size: 14px;
-
-    margin:
-        0
-        0
-        20px
-        0;
-}
-
-
-#review-modal .form-group {
-
-    margin-bottom: 16px;
-}
-
-
-#review-modal .form-group label {
-
-    display: block;
-
-    font-weight: 600;
-
-    font-size: 13px;
-
-    margin-bottom: 4px;
-
-    color: #555;
-}
-
-
-#review-modal .form-group select {
-
-    width: 100%;
-
-    padding:
-        8px
-        12px;
-
-    border:
-        1px
-        solid
-        #ddd;
-
-    border-radius: 8px;
-
-    font-size: 14px;
-
-    background: white;
-
-    box-sizing: border-box;
-}
-
-
-#review-modal .form-group select:focus {
-
-    border-color: #007bff;
-
-    outline: none;
-
-    box-shadow:
-        0
-        0
-        0
-        3px
-        rgba(0, 123, 255, 0.1);
-}
-
-
-#review-modal .star-rating-wrapper {
-
-    display: flex;
-
-    flex-direction: column;
-
-    align-items: center;
-}
-
-
-#review-modal .star-rating {
-
-    display: flex;
-
-    flex-direction: row-reverse;
-
-    justify-content: flex-end;
-
-    gap: 4px;
-
-    padding: 4px 0;
-}
-
-
-#review-modal .star-rating input {
-
-    display: none;
-}
-
-
-#review-modal .star-rating label {
-
-    font-size: 36px;
-
-    color: #ddd;
-
-    cursor: pointer;
-
-    transition:
-        color
-        0.15s
-        ease;
-
-    margin: 0;
-
-    padding: 2px;
-
-    line-height: 1;
-}
-
-
-#review-modal .star-rating label:hover,
-#review-modal .star-rating label:hover ~ label {
-
-    color: #ffc107;
-}
-
-
-#review-modal
-.star-rating
-input:checked
-~ label {
-
-    color: #ffc107;
-}
-
-
-#review-modal .star-rating-text {
-
-    font-size: 14px;
-
-    color: #999;
-
-    margin-top: 4px;
-
-    min-height: 22px;
-
-    font-weight: 500;
-
-    transition:
-        color
-        0.2s;
-}
-
-
-#review-modal .star-rating-text.active {
-
-    color: #ffc107;
-}
-
-
-#review-modal .form-group textarea {
-
-    width: 100%;
-
-    padding:
-        10px
-        12px;
-
-    border:
-        1px
-        solid
-        #ddd;
-
-    border-radius: 8px;
-
-    font-size: 14px;
-
-    resize: vertical;
-
-    min-height: 80px;
-
-    box-sizing: border-box;
-
-    font-family: inherit;
-
-    transition:
-        border-color
-        0.2s;
-}
-
-
-#review-modal .form-group textarea:focus {
-
-    border-color: #007bff;
-
-    outline: none;
-
-    box-shadow:
-        0
-        0
-        0
-        3px
-        rgba(0, 123, 255, 0.1);
-}
-
-
-#review-modal
-.form-group
-textarea::placeholder {
-
-    color: #bbb;
-}
-
-
-#review-modal .review-modal-buttons {
-
-    display: flex;
-
-    gap: 10px;
-
-    margin-top: 18px;
-}
-
-
-#review-modal
-.review-modal-buttons
-button {
-
-    flex: 1;
-
-    padding:
-        10px
-        16px;
-
-    border: none;
-
-    border-radius: 8px;
-
-    font-size: 14px;
-
-    font-weight: 600;
-
-    cursor: pointer;
-
-    transition:
-        background
-        0.2s
-        ease;
-
-    font-family: inherit;
-}
-
-
-#review-modal
-.review-modal-buttons
-.btn-secondary {
-
-    background: #f1f1f1;
-
-    color: #555;
-}
-
-
-#review-modal
-.review-modal-buttons
-.btn-secondary:hover {
-
-    background: #e5e5e5;
-
-    transform: none;
-}
-
-
-#review-modal
-.review-modal-buttons
-.btn-primary {
-
-    background: #007bff;
-
-    color: white;
-}
-
-
-#review-modal
-.review-modal-buttons
-.btn-primary:hover {
-
-    background: #0056b3;
-
-    transform: none;
-}
-
-
-@media (max-width: 500px) {
-
-    #review-modal .review-modal-box {
-
-        padding: 20px;
-
-        width: 95%;
-    }
-
-
-    #review-modal
-    .star-rating
-    label {
-
-        font-size: 30px;
-    }
-
-
-    #review-modal
-    .review-modal-buttons {
-
-        flex-direction: column;
-    }
-
-
-    #review-modal
-    .review-modal-box
-    h2 {
-
-        font-size: 18px;
-    }
-
-}
-
-</style>
 
 
 <div id="review-modal">
@@ -1789,6 +1281,7 @@ function openEmailPopup() {
 
     error.textContent = '';
 
+    modal.classList.add('is-open');
     modal.style.display = 'flex';
 
 
@@ -1821,6 +1314,7 @@ function closeEmailPopup() {
         );
 
 
+    modal.classList.remove('is-open');
     modal.style.display = 'none';
 
     input.value = '';
@@ -2348,67 +1842,7 @@ function validateReviewForm() {
 
 </script>
 
-
-<p><?= count($arr) ?> item(s)</p>
-
-<table class="table">
-    <tr>
-        <th>Product Id</th>
-        <th>Product Name</th>
-        <th>Price (RM)</th>
-        <th>Unit</th>
-        <th>Subtotal (RM)</th>
-    </tr>
-
-    <?php foreach ($arr as $i):
-        $img = photo_url($i->photo);
-        $imgFolder = is_file(__DIR__ . '/../products/' . $img) ? '/products/' : '/photos/';
-    ?>
-    <tr>
-        <td><?= $i->product_id ?></td>
-        <td><?= $i->name ?></td>
-        <td class="right"><?= $i->price ?></td>
-        <td class="right"><?= $i->unit ?></td>
-        <td class="right">
-            <?= $i->subtotal ?>
-            <img src="<?= $imgFolder . rawurlencode($img) ?>" class="popup">
-        </td>
-    </tr>
-    <?php endforeach ?>
-
-    <tr>
-        <th colspan="3"></th>
-        <th class="right"><?= $o->count ?></th>
-        <th class="right"><?= $o->total ?></th>
-    </tr>
-</table>
-
-<p>
-    <button data-get="history.php">History</button>
-</p>
-
-<?php if ($_user->role == 'Admin' && ($o->status ?? 'completed') === 'pending'): ?>
-    <!-- (Admin) Approve or reject the pending cancellation request -->
-    <form method="post" onsubmit="return confirm('Approve this cancellation?&#10;Stock will be restocked and points refunded.');">
-        <input type="hidden" name="action" value="approve_cancel">
-        <button type="submit">Approve Cancellation</button>
-        <button type="button" data-get="history.php">Back</button>
-    </form>
-    <form method="post" onsubmit="return confirm('Reject this cancellation request?&#10;The order will be restored to completed.');">
-        <input type="hidden" name="action" value="reject_cancel">
-        <button type="submit" class="danger">Reject Cancellation</button>
-    </form>
-<?php elseif ($_user->role != 'Admin' && $o->user_id == $_user->id && is_order_cancellable($o->id)): ?>
-    <!-- (Member) Request cancellation — pending until admin approves -->
-    <form method="post" onsubmit="return confirm('Request to cancel this order?&#10;It will be pending until an admin approves.');">
-        <input type="hidden" name="action" value="cancel">
-        <label>Reason (optional)</label>
-        <input type="text" name="reason">
-        <button type="submit">Request Cancellation</button>
-        <button type="button" data-get="history.php">Back</button>
-    </form>
-<?php endif ?>
-</p>
+</div><!-- .order-detail-page -->
 
 <?php
 include '../_foot.php';

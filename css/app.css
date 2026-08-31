@@ -1813,458 +1813,665 @@ footer {
     }
 }
 
-```css
-/* =========================================================
-   E-RECEIPT PAGE
+
+/* ==========================================================================
+   Order Detail / E-Receipt
+   ========================================================================== */
+
+.order-detail-page {
+    max-width: 920px;
+    margin: 0 auto;
+    padding-bottom: 32px;
+}
+
+.order-detail-header {
+    margin-bottom: 20px;
+}
+
+.order-detail-header-top {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 16px;
+    margin-bottom: 14px;
+}
+
+.order-detail-header h1 {
+    margin: 0;
+    font-size: 1.65rem;
+    color: var(--coffee-dark);
+}
+
+.order-detail-meta {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px 20px;
+    padding: 16px 18px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+}
+
+.order-detail-meta div {
+    min-width: 0;
+}
+
+.order-detail-meta dt {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 4px;
+}
+
+.order-detail-meta dd {
+    margin: 0;
+    color: var(--ink);
+    font-weight: 500;
+}
 
 .receipt-container {
-    max-width: 900px;
-    margin: 30px auto;
+    max-width: 100%;
+    margin: 0;
 }
 
 .receipt {
-    background: white;
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+    background: var(--card);
+    padding: 32px 34px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    box-shadow: 0 8px 28px rgba(62, 43, 34, 0.06);
 }
-
-
-/* =========================================================
-   RECEIPT HEADER
 
 .receipt-header {
     text-align: center;
     padding-bottom: 20px;
-    border-bottom: 2px dashed #999;
+    border-bottom: 2px dashed var(--line);
 }
 
 .receipt-logo {
-    font-size: 50px;
-    margin-bottom: 5px;
+    font-size: 2.5rem;
+    line-height: 1;
+    margin-bottom: 6px;
 }
 
 .receipt-header h1 {
     margin: 0;
-    font-size: 28px;
+    font-size: 1.65rem;
+    color: var(--coffee-dark);
 }
 
 .receipt-header p {
-    margin: 5px 0;
-    color: #666;
+    margin: 6px 0 0;
+    color: var(--muted);
 }
-
-
-/* =========================================================
-   RECEIPT TITLE
 
 .receipt-title {
     text-align: center;
-    margin: 25px 0;
+    margin: 24px 0 20px;
 }
 
 .receipt-title h2 {
     margin: 0;
-    font-size: 24px;
-    letter-spacing: 2px;
+    font-size: 1.25rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--coffee);
 }
 
 .receipt-title p {
-    color: #666;
+    margin: 6px 0 0;
+    color: var(--muted);
 }
-
-
-/* =========================================================
-   ORDER INFORMATION
 
 .order-info {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 25px;
-    padding: 15px;
-    background: #f7f7f7;
-    border-radius: 8px;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 16px;
+    background: var(--cream-soft);
+    border: 1px solid var(--line);
+    border-radius: 12px;
 }
 
 .order-info div {
-    padding: 5px;
+    min-width: 0;
 }
 
 .order-info label {
     display: block;
-    font-weight: bold;
-    margin-bottom: 5px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 4px;
 }
 
 .order-info span {
-    color: #555;
+    color: var(--ink);
+    font-weight: 500;
 }
 
+.order-items-heading {
+    margin: 0 0 14px;
+    font-size: 1rem;
+    color: var(--coffee-dark);
+}
 
-/* =========================================================
-   ITEMS TABLE
+.order-items {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
 
-.receipt-items {
+.order-item {
+    display: grid;
+    grid-template-columns: 64px minmax(0, 1fr) auto;
+    gap: 14px;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--cream-soft);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+}
+
+.order-item-thumb {
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.order-item-thumb img {
     width: 100%;
-    border-collapse: collapse;
+    height: 100%;
+    object-fit: contain;
+    display: block;
 }
 
-.receipt-items th {
-    background: #f3f3f3;
-    padding: 12px 8px;
-    text-align: left;
-    border-bottom: 2px solid #ddd;
+.order-item-thumb-placeholder {
+    font-size: 0.68rem;
+    line-height: 1.2;
+    text-align: center;
+    color: var(--muted);
+    padding: 6px;
 }
 
-.receipt-items td {
-    padding: 12px 8px;
-    border-bottom: 1px solid #eee;
+.order-item-body {
+    min-width: 0;
 }
 
-.receipt-items th:nth-child(n+2),
-.receipt-items td:nth-child(n+2) {
+.order-item-name {
+    font-weight: 600;
+    color: var(--ink);
+    line-height: 1.35;
+    word-break: break-word;
+}
+
+.order-item-meta {
+    margin-top: 4px;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+
+.order-item-subtotal {
+    font-weight: 700;
+    color: var(--coffee-dark);
+    white-space: nowrap;
     text-align: right;
 }
 
-
-/* =========================================================
-   RECEIPT SUMMARY
-
 .receipt-summary {
-    width: 400px;
-    max-width: 100%;
-    margin-left: auto;
-    margin-top: 25px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+    margin-top: 8px;
 }
 
 .summary-row {
     display: flex;
     justify-content: space-between;
+    gap: 16px;
     padding: 8px 0;
+    color: var(--ink);
 }
 
-.summary-row.discount {
-    color: #b00020;
+.summary-row.discount span:last-child {
+    color: var(--red);
 }
 
 .summary-row.total {
-    border-top: 2px solid #333;
-    margin-top: 10px;
-    padding-top: 15px;
-    font-size: 20px;
-    font-weight: bold;
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 2px solid var(--coffee);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--coffee-dark);
 }
-
-
-/* =========================================================
-   POINTS
 
 .points-box {
-    margin-top: 25px;
-    padding: 15px;
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: var(--amber-soft);
+    border: 1px solid var(--line);
+    border-radius: 12px;
     text-align: center;
-    background: #fff8e6;
-    border-radius: 8px;
+    color: var(--coffee-dark);
 }
 
-
-/* =========================================================
-   RECEIPT FOOTER
-
 .receipt-footer {
-    text-align: center;
-    margin-top: 30px;
+    margin-top: 24px;
     padding-top: 20px;
-    border-top: 2px dashed #999;
-    color: #777;
+    border-top: 2px dashed var(--line);
+    text-align: center;
+    color: var(--muted);
 }
 
 .receipt-footer p {
-    margin: 5px 0;
+    margin: 0 0 6px;
 }
 
+.order-detail-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
+}
 
-/* =========================================================
-   BUTTONS
+.order-detail-actions button,
+.receipt-buttons button {
+    flex: 1 1 auto;
+    min-width: 140px;
+}
 
 .receipt-buttons {
     display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 25px;
     flex-wrap: wrap;
+    gap: 10px;
 }
-
-.receipt-buttons button {
-    padding: 11px 20px;
-    border: none;
-    border-radius: 7px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-
-/* =========================================================
-   SEND EMAIL BUTTON
 
 .email-button {
-    background: #198754;
-    color: white;
+    background: var(--coffee);
+    color: #fff;
 }
 
 .email-button:hover {
-    background: #157347;
+    background: var(--coffee-hover);
 }
 
-
-/* =========================================================
-   PRINT BUTTON
-
 .print-button {
-    background: #6f4e37;
-    color: white;
+    background: var(--green);
+    color: #fff;
 }
 
 .print-button:hover {
-    background: #573b2a;
+    filter: brightness(0.92);
 }
 
-
-/* =========================================================
-   HISTORY BUTTON
-
-.history-button {
-    background: #ddd;
-    color: #333;
+.history-button,
+.order-detail-actions .btn-history {
+    background: var(--beige);
+    color: var(--coffee-dark);
 }
 
+.history-button:hover,
+.order-detail-actions .btn-history:hover {
+    background: var(--line);
+}
 
-/* =========================================================
-   EMAIL POPUP
+.order-actions-card {
+    margin-top: 24px;
+    padding: 22px 24px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: 0 6px 20px rgba(62, 43, 34, 0.05);
+}
+
+.order-actions-card h2 {
+    margin: 0 0 14px;
+    font-size: 1.1rem;
+    color: var(--coffee-dark);
+}
+
+.order-actions-card form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.order-actions-card label {
+    font-weight: 500;
+    color: var(--ink);
+}
+
+.order-actions-card input[type="text"] {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.order-actions-card .order-actions-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.order-actions-card .order-actions-buttons button {
+    flex: 1 1 auto;
+    min-width: 140px;
+}
+
+.order-actions-card + .order-actions-card {
+    margin-top: 16px;
+}
 
 .email-modal {
     display: none;
     position: fixed;
     z-index: 99999;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.55);
+    inset: 0;
+    background: rgba(30, 20, 15, 0.55);
     align-items: center;
     justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
 }
 
-
-/* =========================================================
-   EMAIL POPUP BOX
+.email-modal.is-open {
+    display: flex;
+}
 
 .email-modal-box {
     position: relative;
-    width: 90%;
-    max-width: 450px;
-    background: white;
-    padding: 35px;
-    border-radius: 15px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    width: 100%;
+    max-width: 440px;
+    background: var(--card);
+    padding: 32px 28px 28px;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    box-shadow: 0 18px 48px rgba(30, 20, 15, 0.22);
     text-align: center;
-    animation: emailPopup 0.2s ease;
+    animation: orderDetailModalIn 0.2s ease;
 }
 
-@keyframes emailPopup {
-
+@keyframes orderDetailModalIn {
     from {
         opacity: 0;
-        transform: scale(0.9);
+        transform: scale(0.96) translateY(8px);
     }
-
     to {
         opacity: 1;
-        transform: scale(1);
+        transform: scale(1) translateY(0);
     }
-
 }
-
-
-/* =========================================================
-   CLOSE BUTTON
 
 .email-close {
     position: absolute;
     top: 10px;
-    right: 15px;
-    width: 35px;
-    height: 35px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
     border: none;
     background: transparent;
-    font-size: 28px;
-    color: #777;
+    font-size: 1.6rem;
+    line-height: 1;
+    color: var(--muted);
     cursor: pointer;
 }
 
 .email-close:hover {
-    color: #333;
+    color: var(--ink);
 }
-
-
-/* =========================================================
-   EMAIL ICON
 
 .email-icon {
-    font-size: 45px;
-    margin-bottom: 10px;
+    font-size: 2.4rem;
+    margin-bottom: 8px;
 }
 
-
-/* =========================================================
-   POPUP TITLE
-
 .email-modal-box h2 {
-    margin: 5px 0 10px;
-    font-size: 24px;
+    margin: 0 0 8px;
+    font-size: 1.35rem;
+    color: var(--coffee-dark);
 }
 
 .email-description {
-    color: #777;
-    margin-bottom: 25px;
+    color: var(--muted);
+    margin: 0 0 20px;
 }
-
-
-/* =========================================================
-   EMAIL INPUT
 
 .email-input-group {
     text-align: left;
+    margin-bottom: 8px;
 }
 
 .email-input-group label {
     display: block;
-    font-weight: bold;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    font-weight: 500;
 }
 
-.email-input-group input {
+.email-input-group input[type="email"] {
     width: 100%;
     box-sizing: border-box;
-    padding: 12px 14px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 15px;
-    outline: none;
 }
-
-.email-input-group input:focus {
-    border-color: #198754;
-    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.12);
-}
-
-
-/* =========================================================
-   ERROR MESSAGE
 
 .email-error {
     display: block;
     margin-top: 6px;
-    color: #dc3545;
-    font-size: 13px;
-    min-height: 18px;
+    color: var(--red);
+    font-size: 0.85rem;
 }
-
-
-/* =========================================================
-   POPUP BUTTONS
 
 .email-modal-buttons {
     display: flex;
-    justify-content: flex-end;
     gap: 10px;
-    margin-top: 20px;
+    margin-top: 18px;
 }
 
 .email-modal-buttons button {
-    padding: 10px 22px;
-    border: none;
-    border-radius: 7px;
-    cursor: pointer;
-    font-size: 14px;
+    flex: 1;
 }
 
-
-/* Cancel */
-
 .cancel-email {
-    background: #e9ecef;
-    color: #333;
+    background: var(--beige);
+    color: var(--coffee-dark);
 }
 
 .cancel-email:hover {
-    background: #d9dde1;
+    background: var(--line);
 }
 
-
-/* Send */
-
 .send-email {
-    background: #198754;
-    color: white;
+    background: var(--green);
+    color: #fff;
 }
 
 .send-email:hover {
-    background: #157347;
+    filter: brightness(0.92);
 }
 
+#review-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    background: rgba(30, 20, 15, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+}
 
-/* =========================================================
-   MOBILE
+#review-modal .review-modal-box {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 28px 30px 24px;
+    max-width: 440px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    border: 1px solid var(--line);
+    box-shadow: 0 18px 48px rgba(30, 20, 15, 0.22);
+}
 
-@media (max-width: 600px) {
+#review-modal .review-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: var(--muted);
+}
 
-    .receipt-container {
-        margin: 10px;
-    }
+#review-modal .review-modal-icon {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 6px;
+}
 
+#review-modal .review-modal-box h2 {
+    text-align: center;
+    margin: 0 0 4px;
+    color: var(--coffee-dark);
+}
+
+#review-modal .review-description {
+    text-align: center;
+    color: var(--muted);
+    margin: 0 0 18px;
+}
+
+#review-modal .form-group {
+    margin-bottom: 16px;
+}
+
+#review-modal .form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+#review-modal .form-group select,
+#review-modal .form-group textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#review-modal .star-rating-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#review-modal .star-rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+#review-modal .star-rating input {
+    display: none;
+}
+
+#review-modal .star-rating label {
+    font-size: 2rem;
+    color: var(--line);
+    cursor: pointer;
+    margin: 0;
+    line-height: 1;
+}
+
+#review-modal .star-rating label:hover,
+#review-modal .star-rating label:hover ~ label,
+#review-modal .star-rating input:checked ~ label {
+    color: #d4a017;
+}
+
+#review-modal .star-rating-text {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-top: 4px;
+    min-height: 22px;
+}
+
+#review-modal .star-rating-text.active {
+    color: #d4a017;
+    font-weight: 600;
+}
+
+#review-modal .review-modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+#review-modal .review-modal-buttons button {
+    flex: 1;
+}
+
+#review-modal .btn-secondary {
+    background: var(--beige);
+    color: var(--coffee-dark);
+}
+
+#review-modal .btn-primary {
+    background: var(--coffee);
+    color: #fff;
+}
+
+@media (max-width: 640px) {
     .receipt {
-        padding: 20px;
+        padding: 22px 18px;
     }
 
-    .order-info {
-        grid-template-columns: 1fr;
+    .order-item {
+        grid-template-columns: 56px minmax(0, 1fr);
+        grid-template-rows: auto auto;
     }
 
-    .receipt-items {
-        font-size: 13px;
+    .order-item-subtotal {
+        grid-column: 2;
+        text-align: left;
+        margin-top: 2px;
     }
 
-    .receipt-buttons {
+    .order-detail-actions,
+    .receipt-buttons,
+    .email-modal-buttons,
+    #review-modal .review-modal-buttons,
+    .order-actions-card .order-actions-buttons {
         flex-direction: column;
     }
 
-    .receipt-buttons button {
+    .order-detail-actions button,
+    .receipt-buttons button,
+    .email-modal-buttons button,
+    .order-actions-card .order-actions-buttons button {
         width: 100%;
+        min-width: 0;
     }
 
     .email-modal-box {
-        padding: 30px 20px;
+        padding: 26px 20px 22px;
     }
-
-    .email-modal-buttons {
-        flex-direction: column;
-    }
-
-    .email-modal-buttons button {
-        width: 100%;
-    }
-
 }
 
-
-/* =========================================================
-   PRINT
-   PRINT ONLY THE E-RECEIPT
-
 @media print {
-
     body * {
         visibility: hidden;
     }
@@ -2285,11 +2492,15 @@ footer {
 
     .receipt {
         box-shadow: none;
+        border: none;
         border-radius: 0;
         padding: 10px;
     }
 
-    .no-print {
+    .no-print,
+    .order-detail-header,
+    .order-detail-actions,
+    .order-actions-card {
         display: none !important;
     }
 
@@ -2297,983 +2508,7 @@ footer {
         size: A4;
         margin: 15mm;
     }
-
 }
-
-```css
-/* =========================================================
-   E-RECEIPT PAGE
-
-.receipt-container {
-    max-width: 900px;
-    margin: 30px auto;
-}
-
-.receipt {
-    background: white;
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-}
-
-
-/* =========================================================
-   RECEIPT HEADER
-
-.receipt-header {
-    text-align: center;
-    padding-bottom: 20px;
-    border-bottom: 2px dashed #999;
-}
-
-.receipt-logo {
-    font-size: 50px;
-    margin-bottom: 5px;
-}
-
-.receipt-header h1 {
-    margin: 0;
-    font-size: 28px;
-}
-
-.receipt-header p {
-    margin: 5px 0;
-    color: #666;
-}
-
-
-/* =========================================================
-   RECEIPT TITLE
-
-.receipt-title {
-    text-align: center;
-    margin: 25px 0;
-}
-
-.receipt-title h2 {
-    margin: 0;
-    font-size: 24px;
-    letter-spacing: 2px;
-}
-
-.receipt-title p {
-    color: #666;
-}
-
-
-/* =========================================================
-   ORDER INFORMATION
-
-.order-info {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 25px;
-    padding: 15px;
-    background: #f7f7f7;
-    border-radius: 8px;
-}
-
-.order-info div {
-    padding: 5px;
-}
-
-.order-info label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.order-info span {
-    color: #555;
-}
-
-
-/* =========================================================
-   ITEMS TABLE
-
-.receipt-items {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.receipt-items th {
-    background: #f3f3f3;
-    padding: 12px 8px;
-    text-align: left;
-    border-bottom: 2px solid #ddd;
-}
-
-.receipt-items td {
-    padding: 12px 8px;
-    border-bottom: 1px solid #eee;
-}
-
-.receipt-items th:nth-child(n+2),
-.receipt-items td:nth-child(n+2) {
-    text-align: right;
-}
-
-
-/* =========================================================
-   RECEIPT SUMMARY
-
-.receipt-summary {
-    width: 400px;
-    max-width: 100%;
-    margin-left: auto;
-    margin-top: 25px;
-}
-
-.summary-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-}
-
-.summary-row.discount {
-    color: #b00020;
-}
-
-.summary-row.total {
-    border-top: 2px solid #333;
-    margin-top: 10px;
-    padding-top: 15px;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-
-/* =========================================================
-   POINTS
-
-.points-box {
-    margin-top: 25px;
-    padding: 15px;
-    text-align: center;
-    background: #fff8e6;
-    border-radius: 8px;
-}
-
-
-/* =========================================================
-   RECEIPT FOOTER
-
-.receipt-footer {
-    text-align: center;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 2px dashed #999;
-    color: #777;
-}
-
-.receipt-footer p {
-    margin: 5px 0;
-}
-
-
-/* =========================================================
-   BUTTONS
-
-.receipt-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 25px;
-    flex-wrap: wrap;
-}
-
-.receipt-buttons button {
-    padding: 11px 20px;
-    border: none;
-    border-radius: 7px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-
-/* =========================================================
-   SEND EMAIL BUTTON
-
-.email-button {
-    background: #198754;
-    color: white;
-}
-
-.email-button:hover {
-    background: #157347;
-}
-
-
-/* =========================================================
-   PRINT BUTTON
-
-.print-button {
-    background: #6f4e37;
-    color: white;
-}
-
-.print-button:hover {
-    background: #573b2a;
-}
-
-
-/* =========================================================
-   HISTORY BUTTON
-
-.history-button {
-    background: #ddd;
-    color: #333;
-}
-
-
-/* =========================================================
-   EMAIL POPUP
-
-.email-modal {
-    display: none;
-    position: fixed;
-    z-index: 99999;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.55);
-    align-items: center;
-    justify-content: center;
-}
-
-
-/* =========================================================
-   EMAIL POPUP BOX
-
-.email-modal-box {
-    position: relative;
-    width: 90%;
-    max-width: 450px;
-    background: white;
-    padding: 35px;
-    border-radius: 15px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
-    text-align: center;
-    animation: emailPopup 0.2s ease;
-}
-
-@keyframes emailPopup {
-
-    from {
-        opacity: 0;
-        transform: scale(0.9);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-}
-
-
-/* =========================================================
-   CLOSE BUTTON
-
-.email-close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    width: 35px;
-    height: 35px;
-    border: none;
-    background: transparent;
-    font-size: 28px;
-    color: #777;
-    cursor: pointer;
-}
-
-.email-close:hover {
-    color: #333;
-}
-
-
-/* =========================================================
-   EMAIL ICON
-
-.email-icon {
-    font-size: 45px;
-    margin-bottom: 10px;
-}
-
-
-/* =========================================================
-   POPUP TITLE
-
-.email-modal-box h2 {
-    margin: 5px 0 10px;
-    font-size: 24px;
-}
-
-.email-description {
-    color: #777;
-    margin-bottom: 25px;
-}
-
-
-/* =========================================================
-   EMAIL INPUT
-
-.email-input-group {
-    text-align: left;
-}
-
-.email-input-group label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 8px;
-}
-
-.email-input-group input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 12px 14px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 15px;
-    outline: none;
-}
-
-.email-input-group input:focus {
-    border-color: #198754;
-    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.12);
-}
-
-
-/* =========================================================
-   ERROR MESSAGE
-
-.email-error {
-    display: block;
-    margin-top: 6px;
-    color: #dc3545;
-    font-size: 13px;
-    min-height: 18px;
-}
-
-
-/* =========================================================
-   POPUP BUTTONS
-
-.email-modal-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.email-modal-buttons button {
-    padding: 10px 22px;
-    border: none;
-    border-radius: 7px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-
-/* Cancel */
-
-.cancel-email {
-    background: #e9ecef;
-    color: #333;
-}
-
-.cancel-email:hover {
-    background: #d9dde1;
-}
-
-
-/* Send */
-
-.send-email {
-    background: #198754;
-    color: white;
-}
-
-.send-email:hover {
-    background: #157347;
-}
-
-
-/* =========================================================
-   MOBILE
-
-@media (max-width: 600px) {
-
-    .receipt-container {
-        margin: 10px;
-    }
-
-    .receipt {
-        padding: 20px;
-    }
-
-    .order-info {
-        grid-template-columns: 1fr;
-    }
-
-    .receipt-items {
-        font-size: 13px;
-    }
-
-    .receipt-buttons {
-        flex-direction: column;
-    }
-
-    .receipt-buttons button {
-        width: 100%;
-    }
-
-    .email-modal-box {
-        padding: 30px 20px;
-    }
-
-    .email-modal-buttons {
-        flex-direction: column;
-    }
-
-    .email-modal-buttons button {
-        width: 100%;
-    }
-
-}
-
-
-/* =========================================================
-   PRINT
-   PRINT ONLY THE E-RECEIPT
-
-@media print {
-
-    body * {
-        visibility: hidden;
-    }
-
-    #print-receipt,
-    #print-receipt * {
-        visibility: visible;
-    }
-
-    #print-receipt {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-    }
-
-    .receipt {
-        box-shadow: none;
-        border-radius: 0;
-        padding: 10px;
-    }
-
-    .no-print {
-        display: none !important;
-    }
-
-    @page {
-        size: A4;
-        margin: 15mm;
-    }
-
-}
-
-```css
-/* =========================================================
-   E-RECEIPT PAGE
-
-.receipt-container {
-    max-width: 900px;
-    margin: 30px auto;
-}
-
-.receipt {
-    background: white;
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
-}
-
-
-/* =========================================================
-   RECEIPT HEADER
-
-.receipt-header {
-    text-align: center;
-    padding-bottom: 20px;
-    border-bottom: 2px dashed #999;
-}
-
-.receipt-logo {
-    font-size: 50px;
-    margin-bottom: 5px;
-}
-
-.receipt-header h1 {
-    margin: 0;
-    font-size: 28px;
-}
-
-.receipt-header p {
-    margin: 5px 0;
-    color: #666;
-}
-
-
-/* =========================================================
-   RECEIPT TITLE
-
-.receipt-title {
-    text-align: center;
-    margin: 25px 0;
-}
-
-.receipt-title h2 {
-    margin: 0;
-    font-size: 24px;
-    letter-spacing: 2px;
-}
-
-.receipt-title p {
-    color: #666;
-}
-
-
-/* =========================================================
-   ORDER INFORMATION
-
-.order-info {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 25px;
-    padding: 15px;
-    background: #f7f7f7;
-    border-radius: 8px;
-}
-
-.order-info div {
-    padding: 5px;
-}
-
-.order-info label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.order-info span {
-    color: #555;
-}
-
-
-/* =========================================================
-   ITEMS TABLE
-
-.receipt-items {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.receipt-items th {
-    background: #f3f3f3;
-    padding: 12px 8px;
-    text-align: left;
-    border-bottom: 2px solid #ddd;
-}
-
-.receipt-items td {
-    padding: 12px 8px;
-    border-bottom: 1px solid #eee;
-}
-
-.receipt-items th:nth-child(n+2),
-.receipt-items td:nth-child(n+2) {
-    text-align: right;
-}
-
-
-/* =========================================================
-   RECEIPT SUMMARY
-
-.receipt-summary {
-    width: 400px;
-    max-width: 100%;
-    margin-left: auto;
-    margin-top: 25px;
-}
-
-.summary-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-}
-
-.summary-row.discount {
-    color: #b00020;
-}
-
-.summary-row.total {
-    border-top: 2px solid #333;
-    margin-top: 10px;
-    padding-top: 15px;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-
-/* =========================================================
-   POINTS
-
-.points-box {
-    margin-top: 25px;
-    padding: 15px;
-    text-align: center;
-    background: #fff8e6;
-    border-radius: 8px;
-}
-
-
-/* =========================================================
-   RECEIPT FOOTER
-
-.receipt-footer {
-    text-align: center;
-    margin-top: 30px;
-    padding-top: 20px;
-    border-top: 2px dashed #999;
-    color: #777;
-}
-
-.receipt-footer p {
-    margin: 5px 0;
-}
-
-
-/* =========================================================
-   BUTTONS
-
-.receipt-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 25px;
-    flex-wrap: wrap;
-}
-
-.receipt-buttons button {
-    padding: 11px 20px;
-    border: none;
-    border-radius: 7px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-
-/* =========================================================
-   SEND EMAIL BUTTON
-
-.email-button {
-    background: #198754;
-    color: white;
-}
-
-.email-button:hover {
-    background: #157347;
-}
-
-
-/* =========================================================
-   PRINT BUTTON
-
-.print-button {
-    background: #6f4e37;
-    color: white;
-}
-
-.print-button:hover {
-    background: #573b2a;
-}
-
-
-/* =========================================================
-   HISTORY BUTTON
-
-.history-button {
-    background: #ddd;
-    color: #333;
-}
-
-
-/* =========================================================
-   EMAIL POPUP
-
-.email-modal {
-    display: none;
-    position: fixed;
-    z-index: 99999;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.55);
-    align-items: center;
-    justify-content: center;
-}
-
-
-/* =========================================================
-   EMAIL POPUP BOX
-
-.email-modal-box {
-    position: relative;
-    width: 90%;
-    max-width: 450px;
-    background: white;
-    padding: 35px;
-    border-radius: 15px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
-    text-align: center;
-    animation: emailPopup 0.2s ease;
-}
-
-@keyframes emailPopup {
-
-    from {
-        opacity: 0;
-        transform: scale(0.9);
-    }
-
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-}
-
-
-/* =========================================================
-   CLOSE BUTTON
-
-.email-close {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    width: 35px;
-    height: 35px;
-    border: none;
-    background: transparent;
-    font-size: 28px;
-    color: #777;
-    cursor: pointer;
-}
-
-.email-close:hover {
-    color: #333;
-}
-
-
-/* =========================================================
-   EMAIL ICON
-
-.email-icon {
-    font-size: 45px;
-    margin-bottom: 10px;
-}
-
-
-/* =========================================================
-   POPUP TITLE
-
-.email-modal-box h2 {
-    margin: 5px 0 10px;
-    font-size: 24px;
-}
-
-.email-description {
-    color: #777;
-    margin-bottom: 25px;
-}
-
-
-/* =========================================================
-   EMAIL INPUT
-
-.email-input-group {
-    text-align: left;
-}
-
-.email-input-group label {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 8px;
-}
-
-.email-input-group input {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 12px 14px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    font-size: 15px;
-    outline: none;
-}
-
-.email-input-group input:focus {
-    border-color: #198754;
-    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.12);
-}
-
-
-/* =========================================================
-   ERROR MESSAGE
-
-.email-error {
-    display: block;
-    margin-top: 6px;
-    color: #dc3545;
-    font-size: 13px;
-    min-height: 18px;
-}
-
-
-/* =========================================================
-   POPUP BUTTONS
-
-.email-modal-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
-}
-
-.email-modal-buttons button {
-    padding: 10px 22px;
-    border: none;
-    border-radius: 7px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-
-/* Cancel */
-
-.cancel-email {
-    background: #e9ecef;
-    color: #333;
-}
-
-.cancel-email:hover {
-    background: #d9dde1;
-}
-
-
-/* Send */
-
-.send-email {
-    background: #198754;
-    color: white;
-}
-
-.send-email:hover {
-    background: #157347;
-}
-
-
-/* =========================================================
-   MOBILE
-
-@media (max-width: 600px) {
-
-    .receipt-container {
-        margin: 10px;
-    }
-
-    .receipt {
-        padding: 20px;
-    }
-
-    .order-info {
-        grid-template-columns: 1fr;
-    }
-
-    .receipt-items {
-        font-size: 13px;
-    }
-
-    .receipt-buttons {
-        flex-direction: column;
-    }
-
-    .receipt-buttons button {
-        width: 100%;
-    }
-
-    .email-modal-box {
-        padding: 30px 20px;
-    }
-
-    .email-modal-buttons {
-        flex-direction: column;
-    }
-
-    .email-modal-buttons button {
-        width: 100%;
-    }
-
-}
-
-
-/* =========================================================
-   PRINT
-   PRINT ONLY THE E-RECEIPT
-
-@media print {
-
-    body * {
-        visibility: hidden;
-    }
-
-    #print-receipt,
-    #print-receipt * {
-        visibility: visible;
-    }
-
-    #print-receipt {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-    }
-
-    .receipt {
-        box-shadow: none;
-        border-radius: 0;
-        padding: 10px;
-    }
-
-    .no-print {
-        display: none !important;
-    }
-
-    @page {
-        size: A4;
-        margin: 15mm;
-    }
-
-}
-
 /* ==========================================================================
    WISHLIST / FAVOURITES
    ========================================================================== */
