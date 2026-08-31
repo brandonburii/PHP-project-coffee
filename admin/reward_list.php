@@ -3,6 +3,8 @@ include '../_base.php';
 
 auth('Admin');
 
+ensure_reward_product_id_column();
+
 if (is_post()) {
     $id = req('id');
     $btn = req('btn');
@@ -27,7 +29,6 @@ if (is_post()) {
 }
 
 $fields = [
-    'id'         => 'ID',
     'name'       => 'Name',
     'points'     => 'Points',
     'stock'      => 'Stock',
@@ -90,8 +91,10 @@ include '../_head.php';
         <?php foreach ($arr as $r): ?>
         <tr>
             <td><img src="<?= photo_src($r->photo) ?>" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid var(--line);"></td>
-            <td><?= $r->id ?></td>
-            <td><?= encode($r->name) ?></td>
+            <td>
+                <?= encode($r->name) ?>
+                <br><small style="color:var(--muted,#666);font-size:.8rem;"><?= encode(reward_type_label($r)) ?></small>
+            </td>
             <td class="right"><?= $r->points ?></td>
             <td class="right">
                 <?= $r->stock ?>
