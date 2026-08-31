@@ -304,243 +304,6 @@ include '../_head.php';
      ======================================================================= -->
 
 <div id="products">
-
-<?php foreach ($arr as $p): ?>
-
-    <?php
-
-    // Cart
-    $cart = get_cart();
-
-    $id = $p->id;
-
-    $unit = $cart[$p->id] ?? 0;
-
-
-    // Stock
-    $max_unit = min($p->stock, 10);
-
-    $in_stock = $max_unit >= 1;
-
-
-    // Sale
-    $on_sale = is_on_sale($p);
-
-    $price = product_price($p);
-
-
-    // Compare
-    $in_compare = in_array(
-        $p->id,
-        $compare
-    );
-
-
-    // Wishlist
-    $in_wishlist = in_array(
-        $p->id,
-        $wishlist
-    );
-
-
-    // Photo
-    $img = photo_url(
-        $p->photo
-    );
-
-    ?>
-
-
-    <div
-        class="product <?= $in_stock ? '' : 'is-soldout' ?>"
-    >
-
-
-        <!-- ===============================================================
-             PRODUCT IMAGE
-             =============================================================== -->
-
-        <div class="thumb">
-
-
-            <?php if ($unit): ?>
-
-                <span class="badge in-cart">
-
-                    <?= $unit ?> in cart
-
-                </span>
-
-            <?php endif ?>
-
-
-            <?php if (!empty($p->tag)): ?>
-
-                <span class="badge tag-badge">
-
-                    <?= encode($p->tag) ?>
-
-                </span>
-
-            <?php endif ?>
-
-
-            <?php if ($on_sale && $in_stock): ?>
-
-                <span class="badge sale-badge">
-
-                    SALE
-
-                </span>
-
-            <?php endif ?>
-
-            <a href="/product/detail.php?id=<?= $p->id ?>">
-                <img
-                    src="/photos/<?= $img ?>"
-                    alt="<?= encode($p->name) ?>"
-                >
-            </a>
-
-        </div>
-
-
-        <!-- ===============================================================
-             PRODUCT INFORMATION
-             =============================================================== -->
-
-        <div class="info">
-
-
-            <!-- Product Name -->
-
-            <div class="name">
-                <a href="/product/detail.php?id=<?= $p->id ?>" style="text-decoration:none; color:inherit;">
-                    <?= encode($p->name) ?>
-                </a>
-            </div>
-
-
-            <!-- Origin / Roast -->
-
-            <?php if (
-                !empty($p->origin) ||
-                !empty($p->roast)
-            ): ?>
-
-                <div class="meta-line">
-
-                    <?= encode(
-                        trim(
-                            ($p->origin ?? '') .
-
-                            (
-                                !empty($p->origin) &&
-                                !empty($p->roast)
-                                ? ' · '
-                                : ''
-                            ) .
-
-                            ($p->roast ?? '')
-                        )
-                    ) ?>
-
-                </div>
-
-            <?php endif ?>
-
-
-            <!-- Price -->
-
-            <div class="price-row">
-
-
-                <div class="price">
-
-
-                    <?php if (
-                        $on_sale &&
-                        $in_stock
-                    ): ?>
-
-                        <span class="price-was">
-
-                            RM
-                            <?= sprintf(
-                                '%.2f',
-                                $p->price
-                            ) ?>
-
-                        </span>
-
-                    <?php endif ?>
-
-
-                    RM
-                    <?= sprintf(
-                        '%.2f',
-                        $price
-                    ) ?>
-
-
-                </div>
-
-
-                <!-- Stock -->
-
-                <span
-                    class="avail <?= $in_stock ? '' : 'out' ?>"
-                >
-
-                    <?= $in_stock
-                        ? $p->stock . ' available'
-                        : 'Unavailable'
-                    ?>
-
-                </span>
-
-            </div>
-
-
-            <!-- ===========================================================
-                 ADD TO CART
-                 =========================================================== -->
-
-            <?php if ($in_stock): ?>
-
-                <form
-                    method="post"
-                    class="actions ajax-cart"
-                >
-
-
-                    <?php html_hidden(
-                        'id',
-                        "id='id_$p->id'"
-                    ) ?>
-
-
-                    <?php
-
-                    $row_units = array_combine(
-                        range(1, $max_unit),
-                        range(1, $max_unit)
-                    );
-
-                    html_select(
-                        'unit',
-                        $row_units,
-                        null,
-                        "id='unit_$p->id'"
-                    );
-
-                    ?>
-
-
-                    <button type="submit">
-
-                        Add to Cart
-
     <?php if (empty($arr)): ?>
         <div class="card">No products found<?= $q !== '' ? ' for "' . encode($q) . '"' : '' ?>.</div>
     <?php else: ?>
@@ -555,6 +318,7 @@ include '../_head.php';
         $on_sale   = is_on_sale($p);
         $price     = product_price($p);
         $in_compare = in_array($p->id, $compare);
+        $in_wishlist = in_array($p->id, $wishlist);
         $img       = photo_url($p->photo);
         ?>
         <div class="product <?= $in_stock ? '' : 'is-soldout' ?>">
@@ -568,13 +332,17 @@ include '../_head.php';
                 <?php if ($on_sale && $in_stock): ?>
                     <span class="badge sale-badge">SALE</span>
                 <?php endif ?>
-                <img src="<?= photo_src($img) ?>"
-                     alt="<?= encode($p->name) ?>"
-                     data-get="/product/detail.php?id=<?= $p->id ?>">
+                <a href="/product/detail.php?id=<?= $p->id ?>">
+                    <img src="<?= photo_src($img) ?>" alt="<?= encode($p->name) ?>">
+                </a>
             </div>
 
             <div class="info">
-                <div class="name"><?= encode($p->name) ?></div>
+                <div class="name">
+                    <a href="/product/detail.php?id=<?= $p->id ?>" style="text-decoration:none; color:inherit;">
+                        <?= encode($p->name) ?>
+                    </a>
+                </div>
                 <?php if (!empty($p->origin) || !empty($p->roast)): ?>
                     <div class="meta-line">
                         <?= encode(trim(($p->origin ?? '') . (!empty($p->origin) && !empty($p->roast) ? ' · ' : '') . ($p->roast ?? ''))) ?>
@@ -605,152 +373,28 @@ include '../_head.php';
                     </div>
                 <?php endif ?>
 
+                <!-- Wishlist Toggle -->
+                <form method="post" class="wishlist-form" style="margin-top:6px;">
+                    <input type="hidden" name="btn" value="wishlist">
+                    <input type="hidden" name="id" value="<?= encode($p->id) ?>">
+                    <button type="submit" class="wishlist-btn <?= $in_wishlist ? 'active' : '' ?>" style="width:100%; font-size:.8rem;">
+                        <?= $in_wishlist ? '♥ Remove from Favourites' : '♡ Add to Favourites' ?>
+                    </button>
+                </form>
+
+                <!-- Compare -->
                 <form method="post" style="margin-top:6px;">
                     <input type="hidden" name="btn" value="compare">
                     <input type="hidden" name="id" value="<?= encode($p->id) ?>">
                     <button type="submit" class="secondary" style="width:100%; font-size:.8rem;">
                         <?= $in_compare ? '✓ In Compare' : '+ Compare' ?>
                     </button>
-
-
                 </form>
-
-            <?php else: ?>
-
-
-                <div class="actions">
-
-
-                    <select
-                        disabled
-                        aria-label="Quantity unavailable"
-                    >
-
-                        <option>
-                            0
-                        </option>
-
-                    </select>
-
-
-                    <button
-                        type="button"
-                        disabled
-                    >
-
-                        Sold Out
-
-                    </button>
-
-
-                </div>
-
-            <?php endif ?>
-
-
-            <!-- ===========================================================
-                 WISHLIST
-                 =========================================================== -->
-
-            <form
-                method="post"
-                class="wishlist-form"
-            >
-
-
-                <input
-                    type="hidden"
-                    name="btn"
-                    value="wishlist"
-                >
-
-
-                <input
-                    type="hidden"
-                    name="id"
-                    value="<?= encode($p->id) ?>"
-                >
-
-
-                <button
-                    type="submit"
-                    class="wishlist-btn <?= $in_wishlist ? 'active' : '' ?>"
-                >
-
-                    <?php if ($in_wishlist): ?>
-
-                        ♥ Remove from Favourites
-
-                    <?php else: ?>
-
-                        ♡ Add to Favourites
-
-                    <?php endif ?>
-
-                </button>
-
-
-            </form>
-
-
-            <!-- ===========================================================
-                 COMPARE
-                 =========================================================== -->
-
-            <form
-                method="post"
-                style="margin-top:6px;"
-            >
-
-
-                <input
-                    type="hidden"
-                    name="btn"
-                    value="compare"
-                >
-
-
-                <input
-                    type="hidden"
-                    name="id"
-                    value="<?= encode($p->id) ?>"
-                >
-
-
-                <button
-                    type="submit"
-                    class="secondary"
-                    style="
-                        width:100%;
-                        font-size:.8rem;
-                    "
-                >
-
-                    <?= $in_compare
-                        ? '✓ In Compare'
-                        : '+ Compare'
-                    ?>
-
-                </button>
-
-
-            </form>
-
-
+            </div>
         </div>
-
-    </div>
-
-
-<?php endforeach ?>
-
         <?php endforeach ?>
     <?php endif ?>
 </div>
 
-
 <?php
-
 include '../_foot.php';
-
-?>

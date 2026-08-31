@@ -2433,38 +2433,6 @@ function validateReviewForm() {
 
 </script>
 
-<?php include '../_foot.php'; ?>
-    <?php if (!empty($o->points_earned)): ?>
-        <label>Points Earned</label>
-        <div><span class="badge-status success">+<?= $o->points_earned ?> points</span></div>
-        <br>
-    <?php endif ?>
-    <?php
-        // Display order status and cancellation info
-        $status = $o->status ?? 'completed';
-        $cancellable = is_order_cancellable($o->id);
-    ?>
-    <label>Status</label>
-    <div>
-        <?php if ($status === 'pending'): ?>
-            <span class="badge-status process">Pending Cancellation</span>
-            <?php if (!empty($o->cancel_reason)): ?> — <?= encode($o->cancel_reason) ?><?php endif ?>
-            <br><small style="color:var(--muted);">Waiting for admin approval</small>
-        <?php elseif ($status === 'cancelled'): ?>
-            <span class="badge-status danger">Cancelled</span>
-            <?php if (!empty($o->cancelled_at)): ?> at <?= $o->cancelled_at ?><?php endif ?>
-            <?php if (!empty($o->cancel_reason)): ?> — <?= encode($o->cancel_reason) ?><?php endif ?>
-            <?php if (!empty($o->cancelled_by)): 
-                $ustm = $_db->prepare('SELECT name,email FROM user WHERE id = ?'); $ustm->execute([$o->cancelled_by]); $ub = $ustm->fetch();
-                if ($ub) { echo ' by ' . encode($ub->name ?? $ub->email); }
-            endif ?>
-        <?php elseif ($status === 'refunded'): ?>
-            <span class="badge-status neutral">Refunded</span>
-        <?php else: ?>
-            <span class="badge-status success"><?= encode(ucfirst($status)) ?></span>
-        <?php endif ?>
-    </div>
-</form>
 
 <p><?= count($arr) ?> item(s)</p>
 

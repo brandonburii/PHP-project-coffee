@@ -95,26 +95,13 @@ add_recent($p->id);
 // ----------------------------------------------------------------------------
 // GET PRODUCT IMAGES FOR SLIDER
 // ----------------------------------------------------------------------------
-
-// Check if product_image table exists
-try {
-    $stm = $_db->prepare('
-        SELECT image_path, is_primary 
-        FROM product_image 
-        WHERE product_id = ? 
-        ORDER BY is_primary DESC, sort_order ASC
-    ');
-    $stm->execute([$p->id]);
-    $images = $stm->fetchAll();
-    
-    // If no images found, use the main photo
-    if (empty($images)) {
-        $images = [(object)['image_path' => $p->photo, 'is_primary' => true]];
-    }
-} catch (PDOException $e) {
-    // Table doesn't exist yet, use main photo
-    $images = [(object)['image_path' => $p->photo, 'is_primary' => true]];
+$product_images = get_product_images($p->name);
+if (empty($product_images)) {
+    $product_images = [$p->photo];
 }
+$images = array_map(function($path) {
+    return (object)['image_path' => $path];
+}, $product_images);
 
 // ----------------------------------------------------------------------------
 // CUSTOMERS ALSO BOUGHT
@@ -194,12 +181,6 @@ $in_wishlist = is_wishlisted($p->id);
 
 // Count total images
 $total_images = count($images);
-
-// Get all product images
-$product_images = get_product_images($p->name);
-if (empty($product_images)) {
-    $product_images = [photo_url($p->photo)];
-}
 ?>
  <style>
 .product-rating-summary {
@@ -458,9 +439,9 @@ if (empty($product_images)) {
                 <?php foreach ($images as $index => $img): ?>
                     <div class="swiper-slide">
                         <img 
-                            src="/photos/<?= photo_url($img->image_path) ?>" 
+                            src="<?= photo_src($img->image_path) ?>" 
                             alt="<?= encode($p->name) . ($index > 0 ? ' - view ' . ($index + 1) : '') ?>"
-                            data-src="/photos/<?= photo_url($img->image_path) ?>"
+                            data-src="<?= photo_src($img->image_path) ?>"
                             loading="<?= $index === 0 ? 'eager' : 'lazy' ?>"
                         >
                     </div>
@@ -487,34 +468,12 @@ if (empty($product_images)) {
                     <?php foreach ($images as $index => $img): ?>
                         <div class="swiper-slide thumb-slide">
                             <img 
-                                src="/photos/<?= photo_url($img->image_path) ?>" 
+                                src="<?= photo_src($img->image_path) ?>" 
                                 alt="Thumbnail <?= $index + 1 ?>"
                             >
                         </div>
                     <?php endforeach ?>
                 </div>
-            </div>
-        <?php endif ?>
-
-    <div class="gallery-container">
-        <div class="gallery">
-            <img id="mainImage" src="<?= photo_src($product_images[0]) ?>" alt="<?= encode($p->name) ?>" class="main-image">
-            <?php if (count($product_images) > 1): ?>
-                <div class="gallery-nav">
-                    <button class="gallery-prev" onclick="prevImage()">❮</button>
-                    <button class="gallery-next" onclick="nextImage()">❯</button>
-                </div>
-            <?php endif ?>
-        </div>
-        
-        <?php if (count($product_images) > 1): ?>
-            <div class="gallery-thumbnails">
-                <?php foreach ($product_images as $index => $image): ?>
-                    <img src="<?= photo_src($image) ?>" alt="<?= encode($p->name) ?>"
-                         class="thumbnail <?= $index === 0 ? 'active' : '' ?>" 
-                         onclick="showImage(<?= $index ?>)"
-                         title="View image <?= $index + 1 ?>">
-                <?php endforeach ?>
             </div>
         <?php endif ?>
     </div>
@@ -1270,41 +1229,5 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 </script>
-
-<?phpinclude '../_foot.php';
-?>
-<script>
-let currentImageIndex = 0;
-const productImages = <?= json_encode(array_map(fn($i) => photo_src($i), $product_images)) ?>;
-
-function showImage(index) {
-    if (index < 0 || index >= productImages.length) return;
-    
-    currentImageIndex = index;
-    document.getElementById('mainImage').src = productImages[index];
-    
-    // Update thumbnail active state
-    document.querySelectorAll('.thumbnail').forEach((thumb, i) => {
-        thumb.classList.toggle('active', i === index);
-    });
-}
-
-function nextImage() {
-    let nextIndex = (currentImageIndex + 1) % productImages.length;
-    showImage(nextIndex);
-}
-
-function prevImage() {
-    let prevIndex = (currentImageIndex - 1 + productImages.length) % productImages.length;
-    showImage(prevIndex);
-}
-
-// Allow keyboard navigation
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight') nextImage();
-    if (e.key === 'ArrowLeft') prevImage();
-});
-</script>
-
 <?php
 include '../_foot.php';

@@ -160,8 +160,6 @@ include '../_head.php';
     background: #5a6268;
 }
 </style>
-
-<?php if ($_user->role == 'Admin'): ?>
 <?php if ($isAdmin): ?>
 <p>
     <button class="danger" data-post="reset.php" data-confirm="Reset all orders?&#10;This deletes every order and item. This action cannot be undone.">Reset Database Orders</button>
