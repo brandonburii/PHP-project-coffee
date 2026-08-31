@@ -1,39 +1,167 @@
 <?php
+
 include '../_base.php';
 
-// ----------------------------------------------------------------------------
+// ============================================================================
+// POST
+// ============================================================================
 
 if (is_post()) {
+
     $btn = req('btn');
 
-    // Toggle compare selection
+
+    // ========================================================================
+    // Toggle Compare
+    // ========================================================================
+
     if ($btn == 'compare') {
+
         $id = req('id');
+
         if ($id != '' && is_exists($id, 'product', 'id')) {
+
             if (!toggle_compare($id)) {
-                temp('info', 'You can compare up to 3 products only');
+                temp(
+                    'info',
+                    'You can compare up to 3 products only'
+                );
             }
         }
+
         redirect();
     }
+
+
+    // ========================================================================
+    // Toggle Wishlist
+    // ========================================================================
+
+    if ($btn == 'wishlist') {
+
+        $id = req('id');
+
+
+        // Check product exists
+        if ($id != '' && is_exists($id, 'product', 'id')) {
+
+
+            // Check login
+            if (!isset($_user) || !$_user) {
+
+                temp(
+                    'info',
+                    'Please login to add products to your favourites'
+                );
+
+                redirect();
+            }
+
+
+            // Only members
+            if (($_user->role ?? '') != 'Member') {
+
+                temp(
+                    'info',
+                    'Only members can use favourites'
+                );
+
+                redirect();
+            }
+
+
+            // Check current status
+            $was_wishlisted = is_wishlisted($id);
+
+
+            // Toggle
+            toggle_wishlist($id);
+
+
+            // Message
+            if ($was_wishlisted) {
+
+                temp(
+                    'info',
+                    'Product removed from favourites'
+                );
+
+            }
+            else {
+
+                temp(
+                    'info',
+                    'Product added to favourites ❤️'
+                );
+            }
+        }
+
+        redirect();
+    }
+
+
+    // ========================================================================
+    // Add to Cart
+    // ========================================================================
 
     $id   = req('id');
     $unit = req('unit');
 
-    // Block add-to-cart when out of stock
-    $stm = $_db->prepare('SELECT stock FROM product WHERE id = ?');
-    $stm->execute([$id]);
-    $stock = (int) $stm->fetchColumn();
-    if ($stock < 1) {
-        temp('info', 'This product is out of stock');
+
+    // Check product exists
+    if ($id == '' || !is_exists($id, 'product', 'id')) {
+
+        temp(
+            'info',
+            'Invalid product'
+        );
+
         redirect();
     }
 
-    audit('Cart', 'Added product to cart', "Added product ID $id with quantity $unit from product list page");
+
+    // Check stock
+    $stm = $_db->prepare(
+        'SELECT stock FROM product WHERE id = ?'
+    );
+
+    $stm->execute([$id]);
+
+    $stock = (int) $stm->fetchColumn();
+
+
+    // Out of stock
+    if ($stock < 1) {
+
+        temp(
+            'info',
+            'This product is out of stock'
+        );
+
+        redirect();
+    }
+
+
+    // Add to cart
+    audit(
+        'Cart',
+        'Added product to cart',
+        "Added product ID $id with quantity $unit from product list page"
+    );
+
     update_cart($id, $unit);
+
     redirect();
 }
 
+
+// ============================================================================
+// GET PRODUCTS
+// ============================================================================
+
+$arr = $_db->query(
+    'SELECT * FROM product'
+);
 $q = trim((string) (req('q') ?? ''));
 $category = trim((string) (req('category') ?? ''));
 $min_price = req('min_price');
@@ -80,14 +208,27 @@ $arr = $stm->fetchAll(PDO::FETCH_OBJ);
 
 $compare = get_compare();
 
-// ----------------------------------------------------------------------------
+$wishlist = get_wishlist();
+
+
+// ============================================================================
+// Page Settings
+// ============================================================================
 
 $_breadcrumbs = [
     'Dashboard' => '/',
-    'Products' => '',
+    'Products'  => '',
 ];
+
 $_title = 'Product | List';
+
 include '../_head.php';
+
+
+// ============================================================================
+// Compare Bar
+// ============================================================================
+
 ?>
 
 <form method="get" style="margin-bottom:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
@@ -116,14 +257,51 @@ include '../_head.php';
 <?php endif ?>
 
 <?php if ($compare): ?>
-<div class="card" style="margin-bottom:18px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+
+<div
+    class="card"
+    style="
+        margin-bottom:18px;
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:12px;
+        flex-wrap:wrap;
+    "
+>
+
     <div>
-        <b><?= count($compare) ?></b> product(s) selected for comparison
-        <span style="color:var(--muted); font-size:.85rem;">(max 3)</span>
+
+        <b><?= count($compare) ?></b>
+
+        product(s) selected for comparison
+
+        <span
+            style="
+                color:var(--muted);
+                font-size:.85rem;
+            "
+        >
+            (max 3)
+        </span>
+
     </div>
-    <button data-get="compare.php">Compare Now</button>
+
+
+    <button data-get="compare.php">
+
+        Compare Now
+
+    </button>
+
 </div>
+
 <?php endif ?>
+
+
+<!-- =======================================================================
+     PRODUCTS
+     ======================================================================= -->
 
 <div id="products">
     <?php if (empty($arr)): ?>
@@ -140,6 +318,7 @@ include '../_head.php';
         $on_sale   = is_on_sale($p);
         $price     = product_price($p);
         $in_compare = in_array($p->id, $compare);
+        $in_wishlist = in_array($p->id, $wishlist);
         $img       = photo_url($p->photo);
         ?>
         <div class="product <?= $in_stock ? '' : 'is-soldout' ?>">
@@ -153,13 +332,17 @@ include '../_head.php';
                 <?php if ($on_sale && $in_stock): ?>
                     <span class="badge sale-badge">SALE</span>
                 <?php endif ?>
-                <img src="<?= photo_src($img) ?>"
-                     alt="<?= encode($p->name) ?>"
-                     data-get="/product/detail.php?id=<?= $p->id ?>">
+                <a href="/product/detail.php?id=<?= $p->id ?>">
+                    <img src="<?= photo_src($img) ?>" alt="<?= encode($p->name) ?>">
+                </a>
             </div>
 
             <div class="info">
-                <div class="name"><?= encode($p->name) ?></div>
+                <div class="name">
+                    <a href="/product/detail.php?id=<?= $p->id ?>" style="text-decoration:none; color:inherit;">
+                        <?= encode($p->name) ?>
+                    </a>
+                </div>
                 <?php if (!empty($p->origin) || !empty($p->roast)): ?>
                     <div class="meta-line">
                         <?= encode(trim(($p->origin ?? '') . (!empty($p->origin) && !empty($p->roast) ? ' · ' : '') . ($p->roast ?? ''))) ?>
@@ -190,6 +373,16 @@ include '../_head.php';
                     </div>
                 <?php endif ?>
 
+                <!-- Wishlist Toggle -->
+                <form method="post" class="wishlist-form" style="margin-top:6px;">
+                    <input type="hidden" name="btn" value="wishlist">
+                    <input type="hidden" name="id" value="<?= encode($p->id) ?>">
+                    <button type="submit" class="wishlist-btn <?= $in_wishlist ? 'active' : '' ?>" style="width:100%; font-size:.8rem;">
+                        <?= $in_wishlist ? '♥ Remove from Favourites' : '♡ Add to Favourites' ?>
+                    </button>
+                </form>
+
+                <!-- Compare -->
                 <form method="post" style="margin-top:6px;">
                     <input type="hidden" name="btn" value="compare">
                     <input type="hidden" name="id" value="<?= encode($p->id) ?>">

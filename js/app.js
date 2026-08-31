@@ -363,3 +363,4 @@ function showConfirm(title, body, onConfirm) {
         if (e.key === 'Escape') { close(); $(document).off('keydown.modal'); }
     });
 }
+

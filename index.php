@@ -351,7 +351,7 @@ include '_head.php';
     <div class="card" style="margin-bottom: 30px;">
         <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px;">
             <h2 style="margin:0;">⚠ Low Stock Notifications</h2>
-            <button class="secondary" data-get="/admin/stock_history.php">Order History</button>
+            <button class="secondary" data-get="/admin/stock_history.php">Stock History</button>
         </div>
 
         <?php if (empty($low_stock_products)): ?>
@@ -656,3 +656,4 @@ include '_head.php';
 
 <?php
 include '_foot.php';
+?>

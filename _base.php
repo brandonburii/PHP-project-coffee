@@ -278,6 +278,7 @@ function icon($name) {
         'reports'   => '<path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16V10"/><path d="M12 16V7"/><path d="M16 16v-4"/>',
         'members'   => '<circle cx="9" cy="8" r="3.2"/><path d="M2 20c0-3.5 3-5.5 7-5.5"/><circle cx="17.5" cy="9" r="2.6"/><path d="M14.5 20c0-2.6 2-4.2 5.5-4.2"/>',
         'home'      => '<path d="M3 11l9-8 9 8"/><path d="M5 10v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V10"/>',
+        'wishlist' => '<path d="M20.8 8.6c0 5.5-8.8 10.4-8.8 10.4S3.2 14.1 3.2 8.6C3.2 5.6 5.4 3.5 8.2 3.5c1.6 0 3.1.8 3.8 2.1.7-1.3 2.2-2.1 3.8-2.1 2.8 0 5 2.1 5 5.1z"/>',
         'login'     => '<path d="M15 3h4a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/>',
         'register'  => '<circle cx="9" cy="8" r="4"/><path d="M2.5 20c0-4 3.5-6 6.5-6"/><path d="M19 8v6M22 11h-6"/>',
         'logout'    => '<path d="M9 3H5a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/>',
@@ -737,6 +738,52 @@ function get_user_points($user_id = null) {
 }
 
 // ============================================================================
+// Stripe Pending Checkout Files
+// ============================================================================
+
+// Safe path for order/pending_<id>.json (24-char hex id from bin2hex(random_bytes(12)))
+function pending_order_path($pending_id) {
+    if (!is_string($pending_id) || !preg_match('/^[a-f0-9]{24}$/', $pending_id)) {
+        return null;
+    }
+    return __DIR__ . '/order/pending_' . $pending_id . '.json';
+}
+
+// Remove one pending checkout file if present (no error if already deleted)
+function delete_pending_order_file($pending_id) {
+    $path = pending_order_path($pending_id);
+    if ($path && is_file($path)) {
+        @unlink($path);
+    }
+}
+
+// Delete abandoned pending_*.json files older than TTL (minimum 24 hours)
+function cleanup_stale_pending_order_files($ttl_seconds = 86400) {
+    $ttl_seconds = max(86400, (int) $ttl_seconds);
+    $now = time();
+
+    foreach (glob(__DIR__ . '/order/pending_*.json') ?: [] as $file) {
+        $age = null;
+        $raw = @file_get_contents($file);
+        if ($raw !== false && $raw !== '') {
+            $data = json_decode($raw, true);
+            if (isset($data['created']) && is_numeric($data['created'])) {
+                $age = $now - (int) $data['created'];
+            }
+        }
+        if ($age === null) {
+            $mtime = @filemtime($file);
+            if ($mtime) {
+                $age = $now - $mtime;
+            }
+        }
+        if ($age !== null && $age > $ttl_seconds) {
+            @unlink($file);
+        }
+    }
+}
+
+// ============================================================================
 // Vouchers
 // ============================================================================
 
@@ -1027,6 +1074,119 @@ function toggle_compare($product_id) {
 }
 
 // ============================================================================
+// Wishlist / Favourites
+// ============================================================================
+
+// Get current user's wishlist product IDs
+function get_wishlist() {
+    global $_db, $_user;
+
+    // Only members can use wishlist
+    if (!$_user || ($_user->role ?? '') != 'Member') {
+        return [];
+    }
+
+    $stm = $_db->prepare('
+        SELECT product_id
+        FROM wishlist
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+    ');
+
+    $stm->execute([$_user->id]);
+
+    return $stm->fetchAll(PDO::FETCH_COLUMN);
+}
+
+
+// Check whether a product is in current user's wishlist
+function is_wishlisted($product_id) {
+    global $_db, $_user;
+
+    if (!$_user || ($_user->role ?? '') != 'Member') {
+        return false;
+    }
+
+    $stm = $_db->prepare('
+        SELECT COUNT(*)
+        FROM wishlist
+        WHERE user_id = ?
+        AND product_id = ?
+    ');
+
+    $stm->execute([
+        $_user->id,
+        $product_id
+    ]);
+
+    return $stm->fetchColumn() > 0;
+}
+
+
+// Add product to wishlist
+function add_wishlist($product_id) {
+    global $_db, $_user;
+
+    if (!$_user || ($_user->role ?? '') != 'Member') {
+        return false;
+    }
+
+    // Make sure product exists
+    if (!is_exists($product_id, 'product', 'id')) {
+        return false;
+    }
+
+    // INSERT IGNORE also protects against duplicates
+    $stm = $_db->prepare('
+        INSERT IGNORE INTO wishlist
+            (user_id, product_id)
+        VALUES
+            (?, ?)
+    ');
+
+    $stm->execute([
+        $_user->id,
+        $product_id
+    ]);
+
+    return true;
+}
+
+
+// Remove product from wishlist
+function remove_wishlist($product_id) {
+    global $_db, $_user;
+
+    if (!$_user || ($_user->role ?? '') != 'Member') {
+        return false;
+    }
+
+    $stm = $_db->prepare('
+        DELETE FROM wishlist
+        WHERE user_id = ?
+        AND product_id = ?
+    ');
+
+    $stm->execute([
+        $_user->id,
+        $product_id
+    ]);
+
+    return true;
+}
+
+
+// Toggle wishlist
+function toggle_wishlist($product_id) {
+
+    if (is_wishlisted($product_id)) {
+        return remove_wishlist($product_id);
+    }
+
+    return add_wishlist($product_id);
+}
+
+// ============================================================================
 // Database Setups and Functions
 // ============================================================================
 
@@ -1058,6 +1218,275 @@ function is_exists($value, $table, $field) {
 // Range 1-10
 $_units = array_combine(range(1, 10), range(1, 10));
 
+// ============================================================================
+// Product Ratings & Reviews
+// ============================================================================
+
+// Get product average rating and total reviews
+function get_product_rating($product_id) {
+    global $_db;
+    
+    try {
+        $stm = $_db->prepare('
+            SELECT 
+                COALESCE(AVG(rating), 0) as avg_rating, 
+                COUNT(*) as total_reviews 
+            FROM review 
+            WHERE product_id = ?
+        ');
+        $stm->execute([$product_id]);
+        $result = $stm->fetch(PDO::FETCH_OBJ);
+        
+        return [
+            'average' => round($result->avg_rating ?? 0, 1),
+            'total' => (int)($result->total_reviews ?? 0)
+        ];
+    } catch (PDOException $e) {
+        error_log('Error in get_product_rating: ' . $e->getMessage());
+        return ['average' => 0, 'total' => 0];
+    }
+}
+
+// Get all reviews for a product
+function get_product_reviews($product_id, $limit = null) {
+    global $_db;
+    
+    try {
+        // Check if column is 'comment' or 'review'
+        $stm = $_db->query('DESCRIBE review');
+        $columns = $stm->fetchAll(PDO::FETCH_COLUMN);
+        $text_column = in_array('comment', $columns) ? 'comment' : 'review';
+        
+        $sql = "
+            SELECT r.*, u.name as user_name, u.photo as user_photo,
+                   r.$text_column as review_text
+            FROM review r
+            JOIN user u ON r.user_id = u.id
+            WHERE r.product_id = ?
+            ORDER BY r.created_at DESC
+        ";
+        
+        if ($limit) {
+            $sql .= ' LIMIT ' . intval($limit);
+        }
+        
+        $stm = $_db->prepare($sql);
+        $stm->execute([$product_id]);
+        return $stm->fetchAll(PDO::FETCH_OBJ);
+        
+    } catch (PDOException $e) {
+        error_log('Error in get_product_reviews: ' . $e->getMessage());
+        return [];
+    }
+}
+
+// Check if user has reviewed a product
+function has_user_reviewed_product($user_id, $product_id, $order_id = null) {
+    global $_db;
+    
+    try {
+        $sql = 'SELECT * FROM review WHERE user_id = ? AND product_id = ?';
+        $params = [$user_id, $product_id];
+        
+        if ($order_id) {
+            $sql .= ' AND order_id = ?';
+            $params[] = $order_id;
+        }
+        
+        $stm = $_db->prepare($sql);
+        $stm->execute($params);
+        return $stm->fetch(PDO::FETCH_OBJ) !== false;
+        
+    } catch (PDOException $e) {
+        error_log('Error in has_user_reviewed_product: ' . $e->getMessage());
+        return false;
+    }
+}
+
+// Get user's review for a specific product and order
+function get_user_product_review($user_id, $product_id, $order_id) {
+    global $_db;
+    
+    try {
+        $stm = $_db->prepare('
+            SELECT * FROM review 
+            WHERE user_id = ? AND product_id = ? AND order_id = ?
+        ');
+        $stm->execute([$user_id, $product_id, $order_id]);
+        return $stm->fetch(PDO::FETCH_OBJ);
+        
+    } catch (PDOException $e) {
+        error_log('Error in get_user_product_review: ' . $e->getMessage());
+        return null;
+    }
+}
+
+// Get all reviews for an order
+function get_order_reviews($order_id) {
+    global $_db;
+    
+    try {
+        $stm = $_db->prepare('
+            SELECT r.*, p.name as product_name, u.name as user_name
+            FROM review r
+            JOIN product p ON r.product_id = p.id
+            JOIN user u ON r.user_id = u.id
+            WHERE r.order_id = ?
+            ORDER BY r.created_at DESC
+        ');
+        $stm->execute([$order_id]);
+        return $stm->fetchAll(PDO::FETCH_OBJ);
+        
+    } catch (PDOException $e) {
+        error_log('Error in get_order_reviews: ' . $e->getMessage());
+        return [];
+    }
+}
+
+// Get a specific review for an order and product
+function get_order_product_review($order_id, $product_id) {
+    global $_db, $_user;
+
+    if (!$_user) {
+        return null;
+    }
+
+    $stm = $_db->prepare('
+        SELECT *
+        FROM review
+        WHERE order_id = ?
+        AND product_id = ?
+        AND user_id = ?
+        LIMIT 1
+    ');
+
+    $stm->execute([
+        $order_id,
+        $product_id,
+        $_user->id
+    ]);
+
+    return $stm->fetch(PDO::FETCH_OBJ);
+}
+
+// Check whether user actually purchased this product in this order
+function can_review_product($order_id, $product_id) {
+    global $_db, $_user;
+
+    if (!$_user || ($_user->role ?? '') != 'Member') {
+        return false;
+    }
+
+    $stm = $_db->prepare('
+        SELECT COUNT(*)
+        FROM item i
+        JOIN `order` o
+            ON i.order_id = o.id
+        WHERE i.order_id = ?
+        AND i.product_id = ?
+        AND o.user_id = ?
+    ');
+
+    $stm->execute([
+        $order_id,
+        $product_id,
+        $_user->id
+    ]);
+
+    return $stm->fetchColumn() > 0;
+}
+
+// Save a product review
+function save_product_review($order_id, $product_id, $rating, $comment) {
+    global $_db, $_user;
+
+    if (!$_user || ($_user->role ?? '') != 'Member') {
+        return [
+            'ok' => false,
+            'error' => 'Please login as a member.'
+        ];
+    }
+
+    // Rating validation
+    $rating = (int) $rating;
+
+    if ($rating < 1 || $rating > 5) {
+        return [
+            'ok' => false,
+            'error' => 'Please select a rating from 1 to 5 stars.'
+        ];
+    }
+
+    // Comment validation
+    $comment = trim($comment);
+
+    if ($comment == '') {
+        return [
+            'ok' => false,
+            'error' => 'Please write a review comment.'
+        ];
+    }
+
+    if (strlen($comment) > 1000) {
+        return [
+            'ok' => false,
+            'error' => 'Review comment is too long.'
+        ];
+    }
+
+    // Make sure this product was purchased in this order
+    if (!can_review_product($order_id, $product_id)) {
+        return [
+            'ok' => false,
+            'error' => 'You can only review products that you purchased.'
+        ];
+    }
+
+    // Check if the column is 'comment' or 'review' in the table
+    try {
+        $stm = $_db->query('DESCRIBE review');
+        $columns = $stm->fetchAll(PDO::FETCH_COLUMN);
+        $text_column = in_array('comment', $columns) ? 'comment' : 'review';
+    } catch (Exception $e) {
+        $text_column = 'comment';
+    }
+
+    // Check whether review already exists
+    $existing = get_order_product_review($order_id, $product_id);
+
+    if ($existing) {
+        // Update existing review
+        $sql = "UPDATE review SET rating = ?, $text_column = ?, updated_at = NOW() WHERE id = ? AND user_id = ?";
+        $stm = $_db->prepare($sql);
+        $stm->execute([
+            $rating,
+            $comment,
+            $existing->id,
+            $_user->id
+        ]);
+
+        return [
+            'ok' => true,
+            'message' => 'Review updated successfully.'
+        ];
+    }
+
+    // Create new review
+    $sql = "INSERT INTO review (order_id, user_id, product_id, rating, $text_column, created_at) VALUES (?, ?, ?, ?, ?, NOW())";
+    $stm = $_db->prepare($sql);
+    $stm->execute([
+        $order_id,
+        $_user->id,
+        $product_id,
+        $rating,
+        $comment
+    ]);
+
+    return [
+        'ok' => true,
+        'message' => 'Thank you for your review!'
+    ];
+}
 
 
 
@@ -1066,18 +1495,38 @@ $_units = array_combine(range(1, 10), range(1, 10));
 // ============================================================================
 
 if (!isset($_SESSION['user']) && isset($_COOKIE['remember_token'])) {
-    $token = $_COOKIE['remember_token'];
-    
-    $stm = $_db->prepare('SELECT * FROM user WHERE remember_token = ?');
-    $stm->execute([$token]);
-    $u = $stm->fetch();
+    // Check if lockout is active
+    $is_locked = false;
+    if (isset($_SESSION['lockout_time'])) {
+        $time_passed = time() - $_SESSION['lockout_time'];
+        if ($time_passed < 180) {
+            $is_locked = true;
+        } else {
+            unset($_SESSION['lockout_time']);
+            $_SESSION['login_attempts'] = 0;
+        }
+    }
 
-    if ($u) {
-        // Log the user in automatically
-        login($u);
+    if (!$is_locked) {
+        $token = $_COOKIE['remember_token'];
+        
+        $stm = $_db->prepare('SELECT * FROM user WHERE remember_token = ?');
+        $stm->execute([$token]);
+        $u = $stm->fetch();
+
+        if ($u) {
+            if ((int)$u->active) {
+                login($u);
+                audit('Auth', 'Remember Me Login', "Automatically logged in using remember token for: {$u->email}");
+            } else {
+                setcookie('remember_token', '', time() - 3600, '/');
+                $stm = $_db->prepare('UPDATE user SET remember_token = NULL WHERE id = ?');
+                $stm->execute([$u->id]);
+                audit('Auth', 'Remember Me Revoked', "Revoked remember token for disabled user: {$u->email}");
+            }
+        }
     }
 }
-
 // ============================================================================
 // Category Maintenance Helpers
 // ============================================================================

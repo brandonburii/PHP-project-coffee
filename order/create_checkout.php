@@ -74,8 +74,16 @@ $_SESSION['pending_order'] = [
     'total' => $total,
 ];
 // Also persist pending order to a server-side file so webhooks can finalize it
+
+// Remove abandoned pending checkout files (24h+); failures are ignored.
+cleanup_stale_pending_order_files(24 * 3600);
+
 $pending_id = bin2hex(random_bytes(12));
-$pending_file = __DIR__ . "/pending_$pending_id.json";
+$pending_file = pending_order_path($pending_id);
+if (!$pending_file) {
+    temp('info', 'Unable to start checkout');
+    redirect('checkout.php');
+}
 $pending_payload = [
     'user_id' => $_user->id,
     'cart' => $cart,

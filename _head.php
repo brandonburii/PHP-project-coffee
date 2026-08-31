@@ -4,9 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $_title ?? 'Untitled' ?></title>
-    <link rel="shortcut icon" href="/images/favicon.png">
+    <link rel="shortcut icon" href="/images/icon.png">
+    
+    <!-- ============================================
+         EXTERNAL CSS
+         ============================================ -->
+    <!-- Swiper.js CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+    
+    <!-- Your main CSS -->
     <link rel="stylesheet" href="/css/app.css">
+    
+    
+    <!--EXTERNAL JS-->
+    <!-- jQuery -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    
+    <!-- Swiper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    
+    <!-- Your main JS -->
     <script src="/js/app.js"></script>
 </head>
 <body>
@@ -33,19 +50,19 @@
                 <a href="/admin/admin_list.php" class="<?= is_active('/admin/admin_list.php') ?>"><?= icon('members') ?><span>Admin Management</span></a>
                 <a href="/admin/product_list.php" class="<?= is_active('/admin/product_list.php') ?>"><?= icon('products') ?><span>Product Maintenance</span></a>
                 <a href="/admin/category_list.php" class="<?= is_active('/admin/category_list.php') ?>"><?= icon('products') ?><span>Category Maintenance</span></a>
-                <a href="/admin/stock_history.php" class="<?= is_active('/admin/stock_history.php') ?>"><?= icon('stock') ?><span>Order History</span></a>
+                <a href="/admin/stock_history.php" class="<?= is_active('/admin/stock_history.php') ?>"><?= icon('stock') ?><span>Stock History</span></a>
                 <a href="/admin/voucher_list.php" class="<?= is_active('/admin/voucher_list.php') ?>"><?= icon('voucher') ?><span>Voucher Maintenance</span></a>
                 <a href="/admin/reward_list.php" class="<?= is_active('/admin/reward_list.php') ?>"><?= icon('rewards') ?><span>Reward Maintenance</span></a>
                 <a href="/order/history.php" class="<?= is_active('/order/history.php') ?>"><?= icon('orders') ?><span>Order Management</span></a>
                 <a href="/admin/order_stock.php" class="<?= is_active('/admin/order_stock.php') ?>"><?= icon('stock') ?><span>Order Stock</span></a>
                 <a href="/admin/audit_log.php" class="<?= is_active('/admin/audit_log.php') ?>"><?= icon('reports') ?><span>Audit Log</span></a>
                 <a href="/admin/reports.php" class="<?= is_active('/admin/reports.php') ?>"><?= icon('reports') ?><span>Sales Reports</span></a>
-                <a href="/admin/admin_list.php" class="<?= is_active('/admin/admin_list.php') ?>"><?= icon('members') ?><span>Admin Maintenance</span></a>
                 <a href="/user/profile.php" class="<?= is_active('/user/profile.php') ?>"><?= icon('profile') ?><span>Profile</span></a>
                 <a href="/logout.php"><?= icon('logout') ?><span>Logout</span></a>
             <?php elseif ($_user?->role == 'Member'): ?>
                 <a href="/" class="<?= is_active('/') ?>"><?= icon('home') ?><span>Home</span></a>
                 <a href="/product/list.php" class="<?= is_active('/product/list.php') ?>"><?= icon('products') ?><span>Products</span></a>
+                <a href="/product/wishlist.php" class="<?= is_active('/product/wishlist.php') ?>"><?= icon('wishlist') ?><span>Wishlist</span></a>
                 <a href="/order/cart.php" class="<?= is_active('/order/cart.php') ?>">
                     <?= icon('cart') ?><span>Shopping Cart</span>
                     <?php
@@ -61,6 +78,7 @@
             <?php else: ?>
                 <a href="/" class="<?= is_active('/') ?>"><?= icon('home') ?><span>Home</span></a>
                 <a href="/product/list.php" class="<?= is_active('/product/list.php') ?>"><?= icon('products') ?><span>Products</span></a>
+                <a href="/product/wishlist.php" class="<?= is_active('/product/wishlist.php') ?>"><?= icon('wishlist') ?><span>Wishlist</span></a>
                 <a href="/order/cart.php" class="<?= is_active('/order/cart.php') ?>">
                     <?= icon('cart') ?><span>Shopping Cart</span>
                     <?php

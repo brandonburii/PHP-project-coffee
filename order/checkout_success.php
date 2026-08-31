@@ -33,6 +33,11 @@ if (!isset($json->payment_status) || $json->payment_status !== 'paid') {
     redirect('checkout.php');
 }
 
+if (isset($json->metadata->user_id) && (int) $json->metadata->user_id !== (int) $_user->id) {
+    temp('info', 'Payment session does not match your account.');
+    redirect('checkout.php');
+}
+
 // Finalize order using pending session data
 if (empty($_SESSION['pending_order'])) {
     temp('info', 'No pending order found in session.');
@@ -103,6 +108,9 @@ try {
     audit('Orders', 'Checkout completed (Stripe)', "Order ID $order_id | subtotal: $subtotal, discount: $discount, total: $total, points used: $points_used, earned: $earned, voucher: " . ($vcode ?? '-'));
 
     $_SESSION['user']->points = ($_SESSION['user']->points ?? 0) - $points_used + $earned;
+
+    // Delete pending file using verified Stripe session metadata (not user input).
+    delete_pending_order_file($json->metadata->pending_id ?? '');
 
     // Clear pending order and cart
     unset($_SESSION['pending_order']);
