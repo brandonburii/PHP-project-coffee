@@ -157,11 +157,6 @@ include '../_head.php';
             // Stock
             $in_stock = $p->stock > 0;
 
-            // Image
-            $img = photo_url(
-                $p->photo
-            );
-
             ?>
 
 
@@ -175,7 +170,7 @@ include '../_head.php';
                 <div class="wishlist-image">
 
                     <img
-                        src="/photos/<?= $img ?>"
+                        src="<?= photo_src($p->photo) ?>"
                         alt="<?= encode($p->name) ?>"
                         data-get="/product/detail.php?id=<?= $p->id ?>"
                     >

@@ -258,88 +258,6 @@ $total_images = count($images);
     background: #e9ecef;
 }
 
-/* Product Reviews Styles */
-.product-reviews {
-    margin-top: 40px;
-    padding-top: 30px;
-    border-top: 2px solid #eee;
-}
-.product-reviews h2 {
-    font-size: 20px;
-    margin: 0 0 20px 0;
-}
-.empty-reviews {
-    text-align: center;
-    padding: 40px 20px;
-    background: #f8f9fa;
-    border-radius: 8px;
-}
-.review-big-star {
-    font-size: 48px;
-    margin-bottom: 10px;
-}
-.empty-reviews h3 {
-    margin: 0 0 8px 0;
-    font-size: 18px;
-}
-.empty-reviews p {
-    margin: 0;
-    color: #666;
-}
-.review-summary {
-    margin-bottom: 25px;
-}
-.review-average {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 6px;
-}
-.review-average strong {
-    font-size: 28px;
-    color: #333;
-}
-.rating-stars.large {
-    font-size: 22px;
-    color: #ffc107;
-}
-.review-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-.review-card {
-    background: #f8f9fa;
-    padding: 15px 20px;
-    border-radius: 6px;
-    border-left: 3px solid #ffc107;
-}
-.review-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 6px;
-}
-.review-card-header strong {
-    font-size: 14px;
-}
-.review-date {
-    font-size: 12px;
-    color: #999;
-}
-.review-stars {
-    color: #ffc107;
-    font-size: 14px;
-    margin-bottom: 6px;
-}
-.review-card p {
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.5;
-}
-
 /* Products Grid */
 #products {
     display: grid;
@@ -1044,25 +962,15 @@ $total_images = count($images);
 
 <?php endif ?>
 
-<!-- =========================================================
-     CUSTOMER REVIEWS
-
+<!-- CUSTOMER REVIEWS -->
 <section class="product-reviews">
 
-    <h2>
-        Customer Reviews
-    </h2>
+    <h2>Customer Reviews</h2>
 
     <?php if (empty($product_reviews)): ?>
 
         <div class="empty-reviews">
-            <div class="review-big-star">⭐</div>
-
-            <h3>No reviews yet</h3>
-
-            <p>
-                Be the first customer to review this product.
-            </p>
+            <p class="review-empty-title">No reviews yet.</p>
         </div>
 
     <?php else: ?>
@@ -1071,22 +979,21 @@ $total_images = count($images);
 
             <div class="review-average">
 
-                <strong>
-                    <?= sprintf('%.1f', $rating_info['average']) ?>
-                </strong>
-
-                <div class="rating-stars large">
+                <div class="rating-stars large" aria-label="<?= sprintf('%.1f out of 5', $rating_info['average']) ?>">
                     <?php
                     $rounded_rating = round($rating_info['average']);
-
                     for ($i = 1; $i <= 5; $i++):
                     ?>
                         <?= $i <= $rounded_rating ? '★' : '☆' ?>
                     <?php endfor ?>
                 </div>
 
-                <span>
-                    <?= $rating_info['total'] ?> review<?= $rating_info['total'] == 1 ? '' : 's' ?>
+                <strong>
+                    <?= sprintf('%.1f', $rating_info['average']) ?> / 5
+                </strong>
+
+                <span class="review-based-on">
+                    Based on <?= $rating_info['total'] ?> review<?= $rating_info['total'] == 1 ? '' : 's' ?>
                 </span>
 
             </div>
@@ -1115,17 +1022,10 @@ $total_images = count($images);
 
                     </div>
 
-                    <div class="review-stars">
-
+                    <div class="review-stars" aria-label="<?= (int) $review->rating ?> out of 5">
                         <?php for ($i = 1; $i <= 5; $i++): ?>
-
-                            <?= $i <= $review->rating
-                                ? '★'
-                                : '☆'
-                            ?>
-
+                            <?= $i <= $review->rating ? '★' : '☆' ?>
                         <?php endfor ?>
-
                     </div>
 
                     <p>

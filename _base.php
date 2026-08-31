@@ -7,6 +7,11 @@
 date_default_timezone_set('Asia/Kuala_Lumpur');
 session_start();
 
+// Optional local Stripe keys (create stripe_local.php — see README_STRIPE.md)
+if (is_file(__DIR__ . '/stripe_local.php')) {
+    require_once __DIR__ . '/stripe_local.php';
+}
+
 // ============================================================================
 // General Page Functions
 // ============================================================================
@@ -136,6 +141,41 @@ function photo_src($photo, $fallback = '0.jpg', $folder = null) {
     }
     $fallbackFolder = $folder ?: 'photos';
     return '/' . $fallbackFolder . '/' . $fallback;
+}
+
+// Product photos for an order (one entry per order line item row)
+function order_item_photos($order_id) {
+    global $_db;
+
+    $stm = $_db->prepare('
+        SELECT p.photo
+        FROM item i
+        JOIN product p ON i.product_id = p.id
+        WHERE i.order_id = ?
+    ');
+    $stm->execute([$order_id]);
+
+    return $stm->fetchAll(PDO::FETCH_COLUMN);
+}
+
+// Fixed-width order-history thumbnail strip: up to 3 images + optional +N badge
+function order_image_preview_html($order_id) {
+    $photos = order_item_photos($order_id);
+    $total  = count($photos);
+    $show   = array_slice($photos, 0, 3);
+    $extra  = max(0, $total - 3);
+
+    $html = '<div class="order-image-preview" aria-label="' . (int) $total . ' product line(s)">';
+    foreach ($show as $photo) {
+        $src = photo_src($photo);
+        $html .= '<img class="order-image-thumb" src="' . htmlspecialchars($src, ENT_QUOTES, 'UTF-8') . '" alt="">';
+    }
+    if ($extra > 0) {
+        $html .= '<span class="order-image-more">+' . (int) $extra . '</span>';
+    }
+    $html .= '</div>';
+
+    return $html;
 }
 
 // Get all product images by product name
@@ -793,6 +833,199 @@ function cleanup_stale_pending_order_files($ttl_seconds = 86400) {
         if ($age !== null && $age > $ttl_seconds) {
             @unlink($file);
         }
+    }
+}
+
+function stripe_secret_key() {
+    return getenv('STRIPE_SECRET_KEY') ?: '';
+}
+
+function stripe_webhook_secret() {
+    return getenv('STRIPE_WEBHOOK_SECRET') ?: '';
+}
+
+// Retrieve a Stripe Checkout Session (server-side only)
+function stripe_retrieve_checkout_session($session_id) {
+    $stripe_secret = stripe_secret_key();
+    if (!$stripe_secret || !$session_id) {
+        return null;
+    }
+
+    $ch = curl_init('https://api.stripe.com/v1/checkout/sessions/' . urlencode($session_id));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_USERPWD, $stripe_secret . ':');
+    $res = curl_exec($ch);
+    curl_close($ch);
+
+    if ($res === false) {
+        return null;
+    }
+
+    return json_decode($res);
+}
+
+// Recover order when pending file was already removed (e.g. webhook finalized first)
+function stripe_find_recent_order($user_id, $total, $minutes = 30) {
+    global $_db;
+
+    $stm = $_db->prepare('
+        SELECT id
+        FROM `order`
+        WHERE user_id = ?
+        AND total = ?
+        AND datetime >= (NOW() - INTERVAL ? MINUTE)
+        ORDER BY id DESC
+        LIMIT 1
+    ');
+    $stm->execute([(int) $user_id, (float) $total, (int) $minutes]);
+
+    return $stm->fetchColumn() ?: null;
+}
+
+// Finalize a paid order from a pending checkout file (idempotent; uses cart in file)
+function finalize_stripe_pending_order($pending_id, $source = 'stripe') {
+    global $_db;
+
+    $path = pending_order_path($pending_id);
+    if (!$path || !is_file($path)) {
+        return ['ok' => false, 'error' => 'pending_not_found', 'order_id' => null];
+    }
+
+    $fp = @fopen($path, 'c+');
+    if (!$fp) {
+        return ['ok' => false, 'error' => 'pending_lock_failed', 'order_id' => null];
+    }
+
+    flock($fp, LOCK_EX);
+    $size = filesize($path);
+    $raw  = $size > 0 ? fread($fp, $size) : '';
+    $data = json_decode($raw, true);
+
+    if (!is_array($data) || empty($data)) {
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        return ['ok' => false, 'error' => 'pending_invalid', 'order_id' => null];
+    }
+
+    if (!empty($data['order_id'])) {
+        $order_id = (int) $data['order_id'];
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        delete_pending_order_file($pending_id);
+        return [
+            'ok' => true,
+            'order_id' => $order_id,
+            'already' => true,
+            'user_id' => (int) ($data['user_id'] ?? 0),
+        ];
+    }
+
+    $user_id = (int) ($data['user_id'] ?? 0);
+    $cart    = $data['cart'] ?? [];
+
+    if ($user_id <= 0 || empty($cart)) {
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        return ['ok' => false, 'error' => 'pending_incomplete', 'order_id' => null];
+    }
+
+    $vcode       = $data['code'] ?? null;
+    $points_used = (int) ($data['points_used'] ?? 0);
+    $subtotal    = (float) ($data['subtotal'] ?? 0);
+    $discount    = (float) ($data['discount'] ?? 0);
+    $total       = (float) ($data['total'] ?? 0);
+
+    try {
+        $_db->beginTransaction();
+
+        $stm = $_db->prepare('
+            INSERT INTO `order`
+                (datetime, count, subtotal, discount, total, points_earned, points_used, voucher_code, user_id)
+            VALUES (NOW(), 0, 0, 0, 0, 0, 0, ?, ?)
+        ');
+        $stm->execute([$vcode, $user_id]);
+        $order_id = (int) $_db->lastInsertId();
+
+        $chk_count  = 0;
+        $stm_prod   = $_db->prepare('SELECT * FROM product WHERE id = ? FOR UPDATE');
+        $stm_item   = $_db->prepare('INSERT INTO item (order_id, product_id, price, unit, subtotal) VALUES (?, ?, ?, ?, ?)');
+        $stm_deduct = $_db->prepare('UPDATE product SET stock = stock - ? WHERE id = ?');
+
+        foreach ($cart as $id => $unit) {
+            $unit = (int) $unit;
+            if ($unit <= 0) {
+                continue;
+            }
+
+            $stm_prod->execute([$id]);
+            $p = $stm_prod->fetch();
+            if (!$p) {
+                continue;
+            }
+
+            if ($p->stock < $unit) {
+                throw new Exception("Insufficient stock for {$id}");
+            }
+
+            $unit_price = product_price($p);
+            $line       = $unit_price * $unit;
+            $chk_count += $unit;
+
+            $stm_item->execute([$order_id, $id, $unit_price, $unit, $line]);
+            $stm_deduct->execute([$unit, $id]);
+            log_stock($id, 'sold', $p->stock, $p->stock - $unit);
+        }
+
+        $earned = points_earned($total);
+
+        $stm_update = $_db->prepare('
+            UPDATE `order`
+            SET count = ?, subtotal = ?, discount = ?, total = ?, points_earned = ?, points_used = ?
+            WHERE id = ?
+        ');
+        $stm_update->execute([$chk_count, $subtotal, $discount, $total, $earned, $points_used, $order_id]);
+
+        $stm_points = $_db->prepare('UPDATE user SET points = points - ? + ? WHERE id = ?');
+        $stm_points->execute([$points_used, $earned, $user_id]);
+
+        if ($vcode) {
+            voucher_use($vcode);
+        }
+
+        $_db->commit();
+
+        audit(
+            'Orders',
+            'Checkout completed (Stripe)',
+            "Order ID $order_id via $source | subtotal: $subtotal, discount: $discount, total: $total, points used: $points_used, earned: $earned, voucher: " . ($vcode ?? '-')
+        );
+
+        $data['order_id'] = $order_id;
+        ftruncate($fp, 0);
+        rewind($fp);
+        fwrite($fp, json_encode($data));
+        fflush($fp);
+        flock($fp, LOCK_UN);
+        fclose($fp);
+
+        delete_pending_order_file($pending_id);
+
+        return [
+            'ok' => true,
+            'order_id' => $order_id,
+            'already' => false,
+            'user_id' => $user_id,
+            'points_used' => $points_used,
+            'earned' => $earned,
+        ];
+    }
+    catch (Exception $e) {
+        if ($_db->inTransaction()) {
+            $_db->rollBack();
+        }
+        flock($fp, LOCK_UN);
+        fclose($fp);
+        return ['ok' => false, 'error' => $e->getMessage(), 'order_id' => null];
     }
 }
 
@@ -1461,6 +1694,7 @@ function save_product_review($order_id, $product_id, $rating, $comment) {
         $columns = $stm->fetchAll(PDO::FETCH_COLUMN);
         $text_column = in_array('comment', $columns) ? 'comment' : 'review';
     } catch (Exception $e) {
+        $columns = [];
         $text_column = 'comment';
     }
 
@@ -1469,7 +1703,10 @@ function save_product_review($order_id, $product_id, $rating, $comment) {
 
     if ($existing) {
         // Update existing review
-        $sql = "UPDATE review SET rating = ?, $text_column = ?, updated_at = NOW() WHERE id = ? AND user_id = ?";
+        $has_updated_at = in_array('updated_at', $columns, true);
+        $sql = $has_updated_at
+            ? "UPDATE review SET rating = ?, $text_column = ?, updated_at = NOW() WHERE id = ? AND user_id = ?"
+            : "UPDATE review SET rating = ?, $text_column = ? WHERE id = ? AND user_id = ?";
         $stm = $_db->prepare($sql);
         $stm->execute([
             $rating,

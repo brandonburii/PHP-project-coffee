@@ -220,32 +220,19 @@ include '../_head.php';
                 <span class="badge-status success">Completed</span>
             <?php endif ?>
         </td>
-        <td>
-            <button data-get="detail.php?id=<?= $o->id ?>">Detail</button>
-            <?php if ($_user->role == 'Member'): ?>
-                <button 
-                    onclick="openReviewModal(<?= $o->id ?>)" 
-                    class="review-history-button"
-                >
-                    ⭐ Rate & Review
-                </button>
-            <?php endif ?>
-            <!-- (A) EXTRA: Product photos -->
-            <?php
-            $stm_photos = $_db->prepare('
-                SELECT p.photo
-                FROM item i
-                JOIN product p ON i.product_id = p.id
-                WHERE i.order_id = ?
-            ');
-            $stm_photos->execute([$o->id]);
-            $photos = $stm_photos->fetchAll(PDO::FETCH_COLUMN);
-            foreach ($photos as $photo):
-                $img = photo_url($photo);
-                $imgFolder = is_file(__DIR__ . '/../products/' . $img) ? '/products/' : '/photos/';
-            ?>
-                <img src="<?= $imgFolder . rawurlencode($img) ?>" style="width:80px; height:80px; border:1px solid #ccc; vertical-align:middle; margin-left:5px;">
-            <?php endforeach ?>
+        <td class="order-history-cell">
+            <?= order_image_preview_html($o->id) ?>
+            <div class="order-history-actions">
+                <button data-get="detail.php?id=<?= $o->id ?>">Detail</button>
+                <?php if ($_user->role == 'Member'): ?>
+                    <button
+                        onclick="openReviewModal(<?= $o->id ?>)"
+                        class="review-history-button"
+                    >
+                        ⭐ Rate & Review
+                    </button>
+                <?php endif ?>
+            </div>
         </td>
     </tr>
     <?php endforeach ?>

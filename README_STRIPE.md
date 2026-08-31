@@ -9,6 +9,15 @@ $env:STRIPE_WEBHOOK_SECRET = 'whsec_...'
 php -S localhost:8800 -t .
 ```
 
+Alternatively, copy the template and fill in your test keys:
+
+```powershell
+copy stripe_local.example.php stripe_local.php
+# Edit stripe_local.php and replace sk_test_REPLACE_ME and whsec_REPLACE_ME
+```
+
+`stripe_local.php` is loaded automatically by `_base.php` and is listed in `.gitignore`.
+
 On production, set `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` in your webserver environment.
 
 2) Optional: use composer and official SDK
