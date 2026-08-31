@@ -412,7 +412,9 @@ function profileForm() {
         },
 
         rotate(deg) {
-            this.rotation = (this.rotation + deg + 360) % 360;
+            // FIX: We subtract the degree instead of adding it. 
+            // This reverses the canvas rotation so "Left" rotates left and "Right" rotates right!
+            this.rotation = (this.rotation - deg + 360) % 360;
             this.drawImage();
         },
 
