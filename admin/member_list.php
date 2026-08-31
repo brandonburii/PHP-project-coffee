@@ -4,6 +4,38 @@ include '../_base.php';
 // Authorization check (Admin only)
 auth('Admin');
 
+// ----------------------------------------------------------------------------
+// Handle Quick Block/Unblock Action
+// ----------------------------------------------------------------------------
+if (is_post() && req('toggle_status')) {
+    $target_id = req('target_id');
+    $new_active = req('new_active'); // 1 for Active, 0 for Blocked
+
+    // Security check: Prevent blocking an Admin
+    $stm_check = $_db->prepare('SELECT role FROM user WHERE id = ?');
+    $stm_check->execute([$target_id]);
+    $target_role = $stm_check->fetchColumn();
+
+    if ($target_role === 'Admin' && (int)$new_active === 0) {
+        temp('err', 'Cannot block an Administrator account.');
+    } else {
+        $stm = $_db->prepare('UPDATE user SET active = ? WHERE id = ?');
+        $stm->execute([$new_active, $target_id]);
+
+        // If blocked, clear remember token to force logout immediately
+        if ((int)$new_active === 0) {
+            $_db->prepare('UPDATE user SET remember_token = NULL WHERE id = ?')->execute([$target_id]);
+        }
+
+        $status_text = (int)$new_active === 1 ? 'Unblocked' : 'Blocked';
+        audit('Admin', 'Status Update', "$status_text user ID: $target_id");
+        temp('info', "User has been $status_text.");
+    }
+    
+    redirect(); // Refresh the page to show the new status
+}
+// ----------------------------------------------------------------------------
+
 // Get sorting, searching and pagination parameters
 $fields = [
     'id'     => 'ID',
@@ -145,7 +177,23 @@ include '../_head.php';
             </td>
             
             <td>
-                <button data-get="member_detail.php?id=<?= $m->id ?>">Details</button>
+                <!-- ONLY show block/unblock if the user is a Member (Not Admin) -->
+                <?php if ($m->role !== 'Admin'): ?>
+                    <form method="post" style="display: inline-block; margin: 0;">
+                        <input type="hidden" name="toggle_status" value="1">
+                        <input type="hidden" name="target_id" value="<?= $m->id ?>">
+                        
+                        <?php if ((int)$m->active === 1): ?>
+                            <input type="hidden" name="new_active" value="0">
+                            <button type="submit" style="background-color: #e74c3c; color: white; border: none; padding: 4px 8px; font-size: 0.85em; cursor: pointer; border-radius: 4px;" onclick="return confirm('Are you sure you want to block this user?');">Block</button>
+                        <?php else: ?>
+                            <input type="hidden" name="new_active" value="1">
+                            <button type="submit" style="background-color: #27ae60; color: white; border: none; padding: 4px 8px; font-size: 0.85em; cursor: pointer; border-radius: 4px;" onclick="return confirm('Are you sure you want to unblock this user?');">Unblock</button>
+                        <?php endif; ?>
+                    </form>
+                <?php endif; ?>
+
+                <button data-get="member_detail.php?id=<?= $m->id ?>" style="padding: 4px 8px; font-size: 0.85em; margin-left: 4px; border-radius: 4px;">Details</button>
             </td>
         </tr>
         <?php endforeach; ?>

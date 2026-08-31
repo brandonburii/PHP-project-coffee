@@ -12,6 +12,7 @@ $m = $stm->fetch();
 if (!$m) {
     redirect('member_list.php');
 }
+
 // Handle updates and deletion
 if (is_post()) {
     $btn = req('btn');
@@ -116,32 +117,6 @@ $stm->execute([$id]);
 $m = $stm->fetch();
 
 // ----------------------------------------------------------------------------
-// Handle Block/Unblock Action
-// ----------------------------------------------------------------------------
-if (is_post() && req('action') == 'toggle_block') {
-    // Prevent the admin from blocking themselves
-    if (isset($_user) && $id == $_user->id) {
-        temp('err', "You cannot block your own account.");
-    } else {
-        // Toggle using the active column: 1 = active, 0 = blocked
-        $new_active = ((int)$m->active === 1) ? 0 : 1;
-        $label      = $new_active ? 'Unblocked' : 'Blocked';
-
-        $update_stm = $_db->prepare('UPDATE user SET active = ? WHERE id = ?');
-        $update_stm->execute([$new_active, $id]);
-
-        // Clear remember_token immediately so a blocked user is kicked out
-        if (!$new_active) {
-            $_db->prepare('UPDATE user SET remember_token = NULL WHERE id = ?')->execute([$id]);
-        }
-
-        audit('Admin', 'User Status Update', "Admin {$label} user {$m->email} (active={$new_active})");
-        temp('info', "Member account is now {$label}.");
-    }
-    // Refresh the page to show the updated status
-    redirect("member_detail.php?id=$id");
-}
-// ----------------------------------------------------------------------------
 
 audit('Admin', 'Viewed Member', "Viewed details for user ID: {$m->id}, Name: {$m->name}, Role: {$m->role}");
 
@@ -161,16 +136,85 @@ $GLOBALS['role'] = $m->role;
 include '../_head.php';
 ?>
 
+<!-- Load Alpine.js for drag and drop functionality -->
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+<style>
+/* Drag and Drop Zone Styles */
+.photo-dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 150px;
+    min-height: 150px;
+    border: 2px dashed #aec2cb;
+    background-color: #e6eff2;
+    border-radius: 8px;
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    box-sizing: border-box;
+    overflow: hidden;
+    position: relative;
+}
+
+.photo-dropzone.dragging {
+    background-color: #d6e4e9;
+    border-color: #8fa3ad;
+}
+
+.photo-dropzone img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 4px;
+    display: block;
+}
+
+.dropzone-placeholder {
+    color: #5c7785;
+    font-size: 13px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+</style>
+
 <form method="post" class="form" enctype="multipart/form-data" style="display:flex; gap:20px; align-items:flex-start;">
-    <div style="min-width:150px;">
-        <label>Photo</label>
-        <br>
-        <label class="upload" style="display:block;">
-            <?= html_file('photo', 'image/*') ?>
-            <img src="<?= photo_src($m->photo) ?>" style="width:150px;height:150px;object-fit:cover;border:1px solid #ccc;border-radius:5px;">
+    
+    <!-- Alpine.js Drag & Drop Component -->
+    <div style="min-width:150px;" x-data="photoUpload('<?= photo_src($m->photo) ?>')">
+        <label style="display:block; margin-bottom:8px;">Photo</label>
+        
+        <label class="photo-dropzone" 
+               :class="{ 'dragging': isDragging }"
+               @dragenter.prevent="isDragging = true"
+               @dragover.prevent="isDragging = true" 
+               @dragleave.prevent="isDragging = false" 
+               @drop.prevent="handleDrop">
+            
+            <!-- Hidden File Input -->
+            <?= html_file('photo', 'image/*', '@change="previewImage" x-ref="photoInput" style="display:none;"') ?>
+            
+            <!-- Empty State / Placeholder -->
+            <div x-show="!imagePreview" class="dropzone-placeholder">
+                <svg style="width: 30px; height: 30px; margin: 0 auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                <span>Drag & Drop<br>or Click</span>
+            </div>
+
+            <!-- Image Preview -->
+            <img x-show="imagePreview" :src="imagePreview" alt="Profile Preview">
         </label>
-        <?= err('photo') ?>
+        
+        <div style="margin-top: 5px;">
+            <?= err('photo') ?>
+        </div>
     </div>
+
     <div style="flex:1;">
         <table class="table detail">
             <tr>
@@ -212,25 +256,10 @@ include '../_head.php';
                     <?= err('role') ?>
                 </td>
             </tr>
-            <tr>
-                <th>Status</th>
-                <td>
-                    <?php if ((int)$m->active === 0): ?>
-                        <span style="color: #e74c3c; font-weight: bold; background: #fadbd8; padding: 4px 10px; border-radius: 12px; font-size: 0.85em;">Blocked</span>
-                    <?php else: ?>
-                        <span style="color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 4px 10px; border-radius: 12px; font-size: 0.85em;">Active</span>
-                    <?php endif; ?>
-                </td>
-            </tr>
         </table>
 
         <section style="margin-top:12px; display:flex; gap:8px;">
             <button name="btn" value="save">Save Changes</button>
-            <?php if (isset($_user) && $m->id != $_user->id): ?>
-                <button type="button" style="background-color: <?= (int)$m->active === 0 ? '#27ae60' : '#e74c3c' ?>; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;" onclick="if(confirm('Are you sure you want to <?= (int)$m->active === 0 ? 'unblock' : 'block' ?> <?= encode($m->name) ?>?')) { document.getElementById('blockform').submit(); }">
-                    <?= (int)$m->active === 0 ? 'Unblock' : 'Block' ?>
-                </button>
-            <?php endif; ?>
             <button type="button" class="danger" onclick="if(confirm('Are you sure you want to delete this member?')) { document.getElementById('delform').submit(); }">Delete Member</button>
             <button data-get="member_list.php" type="button">Back to List</button>
         </section>
@@ -242,9 +271,46 @@ include '../_head.php';
     <input type="hidden" name="btn" value="delete">
 </form>
 
-<form id="blockform" method="post" style="display:none;">
-    <?= html_hidden('id') ?>
-    <input type="hidden" name="action" value="toggle_block">
-</form>
+<!-- Alpine.js Script for Drag & Drop -->
+<script>
+function photoUpload(initialImage) {
+    return {
+        isDragging: false,
+        imagePreview: initialImage,
 
-<?php include '../_foot.php';
+        handleDrop(event) {
+            this.isDragging = false;
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const fileInput = this.$refs.photoInput;
+                if (fileInput) {
+                    fileInput.files = files; 
+                }
+                this.processFile(files[0]);
+            }
+        },
+
+        previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.processFile(file);
+            }
+        },
+
+        processFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please upload a valid image file.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                this.imagePreview = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+}
+</script>
+
+<?php include '../_foot.php'; ?>
