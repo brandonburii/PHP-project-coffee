@@ -89,11 +89,14 @@ $pending_payload = [
 file_put_contents($pending_file, json_encode($pending_payload));
 
 // Stripe secret key
-$stripe_secret = getenv('STRIPE_SECRET_KEY') ?: '';
+// Stripe secret key (Tries to read environment first, defaults to your test key)
+$stripe_secret = getenv('STRIPE_SECRET_KEY') ?: 'sk_test_51U8teg2YrciKQIkEiM2VpV3tGwYoPQynqEbjU4XCI624M8qoIzdjSunBMU8BY9oYV3TSnFgFjyeF0X5vKIjzUqBO00CccZLaSo';
+
 if (!$stripe_secret) {
     temp('info', 'Stripe secret key not configured. Set STRIPE_SECRET_KEY.');
     redirect('checkout.php');
 }
+
 
 // Build absolute URLs for success/cancel
 $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';

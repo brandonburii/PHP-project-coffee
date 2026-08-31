@@ -7,6 +7,8 @@ $fields = [
     'id'    => 'ID',
     'email' => 'Email',
     'name'  => 'Name',
+];
+
 if (is_post()) {
     $id  = req('id');
     $btn = req('btn');
@@ -86,9 +88,6 @@ $arr = $pager->result;
 
 $_breadcrumbs = [
     'Dashboard' => '/',
-    'Admin Maintenance' => '',
-];
-$_title = 'Admin | Admin Maintenance';
     'Admin Management' => '',
 ];
 $_title = 'Admin | Admin Management';
@@ -128,17 +127,6 @@ include '../_head.php';
         </tr>
     </thead>
     <tbody>
-        <?php foreach ($arr as $m): ?>
-        <tr>
-            <td>
-                <img src="<?= photo_src($m->photo) ?>" style="width: 50px; height: 50px; object-fit: cover; border: 1px solid #ccc; border-radius: 5px;">
-            </td>
-            <td><?= $m->id ?></td>
-            <td><?= encode($m->email) ?></td>
-            <td><?= encode($m->name) ?></td>
-            <td>
-                <button data-get="member_detail.php?id=<?= $m->id ?>">Details</button>
-                <button class="danger" data-post="admin_delete.php?id=<?= $m->id ?>" data-confirm="Delete this admin?">Delete</button>
         <?php foreach ($arr as $a): ?>
         <tr>
             <td><img src="/photos/<?= photo_url($a->photo) ?>" style="width:50px;height:50px;object-fit:cover;border:1px solid #ccc;border-radius:5px;"></td>

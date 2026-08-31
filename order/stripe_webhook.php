@@ -3,15 +3,18 @@ include '../_base.php';
 
 // Stripe webhook receiver. Configure your webhook endpoint in Stripe to
 // point to /order/stripe_webhook.php and set STRIPE_WEBHOOK_SECRET.
-
 $raw = file_get_contents('php://input');
 $sig_header = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
-$webhook_secret = getenv('STRIPE_WEBHOOK_SECRET') ?: '';
+
+// Check terminal first, fall back to your specific Stripe CLI local secret if empty
+$webhook_secret = getenv('STRIPE_WEBHOOK_SECRET') ?: 'whsec_644d1524b6f5d588fa5010adc04758b7079b75e4ce7ef2737c21ad103962acb4';
+
 if (!$webhook_secret) {
     http_response_code(400);
     echo 'Missing STRIPE_WEBHOOK_SECRET';
     exit;
 }
+
 
 // Verify signature (simple v1 verification)
 $parts = explode(',', $sig_header);

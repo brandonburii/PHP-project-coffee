@@ -9,11 +9,14 @@ if (!$session_id) {
     redirect('checkout.php');
 }
 
-$stripe_secret = getenv('STRIPE_SECRET_KEY') ?: '';
+// Stripe secret key (Checks environment variable first, falls back to local test key string)
+$stripe_secret = getenv('STRIPE_SECRET_KEY') ?: 'sk_test_51U8teg2YrciKQIkEiM2VpV3tGwYoPQynqEbjU4XCI624M8qoIzdjSunBMU8BY9oYV3TSnFgFjyeF0X5vKIjzUqBO00CccZLaSo';
+
 if (!$stripe_secret) {
     temp('info', 'Stripe secret key not configured.');
     redirect('checkout.php');
 }
+
 
 // Retrieve Checkout Session
 $ch = curl_init('https://api.stripe.com/v1/checkout/sessions/' . urlencode($session_id));
