@@ -119,21 +119,27 @@ $m = $stm->fetch();
 // Handle Block/Unblock Action
 // ----------------------------------------------------------------------------
 if (is_post() && req('action') == 'toggle_block') {
-    // Prevent the admin from blocking themselves (added isset check for safety)
+    // Prevent the admin from blocking themselves
     if (isset($_user) && $id == $_user->id) {
         temp('err', "You cannot block your own account.");
     } else {
-        // Toggle the status based on current state
-        $new_status = ($m->status === 'Blocked') ? 'Active' : 'Blocked';
-        
-        $update_stm = $_db->prepare('UPDATE user SET status = ? WHERE id = ?');
-        $update_stm->execute([$new_status, $id]);
-        
-        audit('Admin', 'User Status Update', "Admin changed status of {$m->email} to $new_status");
-        temp('info', "Member account is now $new_status.");
+        // Toggle using the active column: 1 = active, 0 = blocked
+        $new_active = ((int)$m->active === 1) ? 0 : 1;
+        $label      = $new_active ? 'Unblocked' : 'Blocked';
+
+        $update_stm = $_db->prepare('UPDATE user SET active = ? WHERE id = ?');
+        $update_stm->execute([$new_active, $id]);
+
+        // Clear remember_token immediately so a blocked user is kicked out
+        if (!$new_active) {
+            $_db->prepare('UPDATE user SET remember_token = NULL WHERE id = ?')->execute([$id]);
+        }
+
+        audit('Admin', 'User Status Update', "Admin {$label} user {$m->email} (active={$new_active})");
+        temp('info', "Member account is now {$label}.");
     }
     // Refresh the page to show the updated status
-    redirect("member_detail.php?id=$id"); 
+    redirect("member_detail.php?id=$id");
 }
 // ----------------------------------------------------------------------------
 
@@ -159,73 +165,12 @@ include '../_head.php';
     <div style="min-width:150px;">
         <label>Photo</label>
         <br>
-        <img src="<?= photo_src($m->photo) ?>" style="width:150px;height:150px;object-fit:cover;border:1px solid #ccc;border-radius:5px;">
-        <label class="upload" style="display:block;margin-top:8px;">
+        <label class="upload" style="display:block;">
             <?= html_file('photo', 'image/*') ?>
-            <img src="<?= photo_src('0.jpg') ?>" style="display:none;">
+            <img src="<?= photo_src($m->photo) ?>" style="width:150px;height:150px;object-fit:cover;border:1px solid #ccc;border-radius:5px;">
         </label>
         <?= err('photo') ?>
     </div>
-<div style="display: flex; gap: 20px; align-items: flex-start;">
-    <img src="/photos/<?= htmlspecialchars($m->photo) ?>" style="width: 150px; height: 150px; object-fit: cover; border: 1px solid #ccc; border-radius: 5px;" alt="Profile Photo">
-    <img src="/photos/<?= photo_url($m->photo) ?>" style="width: 150px; height: 150px; object-fit: cover; border: 1px solid #ccc; border-radius: 5px;">
-
-    <table class="table detail">
-        <tr>
-            <th>Member ID</th>
-            <td><?= $m->id ?></td>
-        </tr>
-        <tr>
-            <th>Name</th>
-            <td><?= encode($m->name) ?></td>
-        </tr>
-        <tr>
-            <th>Email</th>
-            <td><?= encode($m->email) ?></td>
-        </tr>
-        <tr>
-            <th>Role</th>
-            <td><?= encode($m->role) ?></td>
-        </tr>
-        <tr>
-            <th>Status</th>
-            <td>
-                <?php if ($m->status === 'Blocked'): ?>
-                    <span style="color: #e74c3c; font-weight: bold; background: #fadbd8; padding: 4px 10px; border-radius: 12px; font-size: 0.85em;">Blocked</span>
-                <?php elseif ($m->status === 'Pending'): ?>
-                    <span style="color: #f39c12; font-weight: bold; background: #fdebd0; padding: 4px 10px; border-radius: 12px; font-size: 0.85em;">Pending</span>
-                <?php else: ?>
-                    <span style="color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 4px 10px; border-radius: 12px; font-size: 0.85em;">Active</span>
-                <?php endif; ?>
-            </td>
-        </tr>
-    </table>
-</div>
-
-<div style="display: flex; gap: 10px; margin-top: 20px;">
-    <button type="button" class="secondary" data-get="member_list.php">Back to List</button>
-
-    <!-- Block/Unblock Action Form -->
-    <?php if (isset($_user) && $m->id != $_user->id): // Do not show block button for the currently logged-in admin ?>
-        <form method="post" style="margin: 0;">
-            <input type="hidden" name="action" value="toggle_block">
-            
-            <?php if ($m->status === 'Blocked'): ?>
-                <button type="submit" style="background-color: #27ae60; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
-                    Unblock Member
-                </button>
-            <?php else: ?>
-                <button type="submit" style="background-color: #e74c3c; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;" onclick="return confirm('Are you sure you want to block <?= encode($m->name) ?>? They will not be able to log in.');">
-                    Block Member
-                </button>
-            <?php endif; ?>
-        </form>
-    <?php endif; ?>
-</div>
-
-<?php
-include '../_foot.php';
-?>
     <div style="flex:1;">
         <table class="table detail">
             <tr>
@@ -267,10 +212,25 @@ include '../_foot.php';
                     <?= err('role') ?>
                 </td>
             </tr>
+            <tr>
+                <th>Status</th>
+                <td>
+                    <?php if ((int)$m->active === 0): ?>
+                        <span style="color: #e74c3c; font-weight: bold; background: #fadbd8; padding: 4px 10px; border-radius: 12px; font-size: 0.85em;">Blocked</span>
+                    <?php else: ?>
+                        <span style="color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 4px 10px; border-radius: 12px; font-size: 0.85em;">Active</span>
+                    <?php endif; ?>
+                </td>
+            </tr>
         </table>
 
         <section style="margin-top:12px; display:flex; gap:8px;">
             <button name="btn" value="save">Save Changes</button>
+            <?php if (isset($_user) && $m->id != $_user->id): ?>
+                <button type="button" style="background-color: <?= (int)$m->active === 0 ? '#27ae60' : '#e74c3c' ?>; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;" onclick="if(confirm('Are you sure you want to <?= (int)$m->active === 0 ? 'unblock' : 'block' ?> <?= encode($m->name) ?>?')) { document.getElementById('blockform').submit(); }">
+                    <?= (int)$m->active === 0 ? 'Unblock' : 'Block' ?>
+                </button>
+            <?php endif; ?>
             <button type="button" class="danger" onclick="if(confirm('Are you sure you want to delete this member?')) { document.getElementById('delform').submit(); }">Delete Member</button>
             <button data-get="member_list.php" type="button">Back to List</button>
         </section>
@@ -280,6 +240,11 @@ include '../_foot.php';
 <form id="delform" method="post" style="display:none;">
     <?= html_hidden('id') ?>
     <input type="hidden" name="btn" value="delete">
+</form>
+
+<form id="blockform" method="post" style="display:none;">
+    <?= html_hidden('id') ?>
+    <input type="hidden" name="action" value="toggle_block">
 </form>
 
 <?php include '../_foot.php';

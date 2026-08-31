@@ -411,14 +411,85 @@ $total_images = count($images);
     color: #28a745;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* Polished layout for Product Detail page */
+.product-detail {
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+    margin-top: 20px;
+    width: 100%;
+}
+.product-detail .gallery {
+    flex: 0 0 400px;
+    max-width: 400px;
+    width: 400px;
+}
+.product-detail .pd-info {
+    flex: 1;
+    min-width: 0;
+}
+.product-detail .pd-info h2 {
+    font-size: 2rem;
+    margin-top: 0;
+    margin-bottom: 12px;
+}
+.product-detail .pd-price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--line);
+}
+.product-detail .pd-price {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--coffee);
+}
+.product-detail .avail {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #2e7d32;
+    background: #e8f5e9;
+    padding: 4px 12px;
+    border-radius: 12px;
+}
+.product-detail .avail.out {
+    color: var(--red);
+    background: #ffebee;
+}
+.product-detail .pd-meta {
+    background: #FAF8F5;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    margin-bottom: 24px;
+}
+.product-detail .pd-meta .row {
+    display: flex;
+    padding: 6px 0;
+    border-bottom: 1px solid #f3eff0;
+}
+.product-detail .pd-meta .row:last-child {
+    border-bottom: none;
+}
+.product-detail .pd-meta .label {
+    width: 120px;
+    font-weight: 700;
+    color: var(--coffee-dark);
+}
+.product-detail .pd-buy {
+    margin-bottom: 16px;
+}
+@media (max-width: 900px) {
     .product-detail {
         flex-direction: column;
+        gap: 30px;
     }
-    .gallery {
+    .product-detail .gallery {
         flex: 0 0 auto;
         max-width: 100%;
+        width: 100%;
     }
 }
 </style>
@@ -923,15 +994,8 @@ $total_images = count($images);
 
 
                     <a href="/product/detail.php?id=<?= $ap->id ?>">
-                        <img
-                            src="/photos/<?= photo_url($ap->photo) ?>"
-                            alt="<?= encode($ap->name) ?>"
-                        >
+                        <img src="<?= photo_src($ap->photo) ?>" alt="<?= encode($ap->name) ?>">
                     </a>
-
-                    <img src="<?= photo_src($ap->photo) ?>"
-                         alt="<?= encode($ap->name) ?>"
-                         data-get="/product/detail.php?id=<?= $ap->id ?>">>
                 </div>
 
 

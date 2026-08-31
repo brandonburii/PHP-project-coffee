@@ -110,7 +110,8 @@ $(function () {
 
     $('#items').on('input change', '.po-qty, .po-price', recalc);
 
-    $('#add').on('click', function () {
+    $('#add').on('click', function (e) {
+        e.preventDefault();
         const $row = $('#items .po-row').first().clone();
         $row.find('select').val('');
         $row.find('input.po-qty').val('');
@@ -119,7 +120,8 @@ $(function () {
         $('#items').append($row);
     });
 
-    $('#items').on('click', '.po-remove', function () {
+    $('#items').on('click', '.po-remove', function (e) {
+        e.preventDefault();
         if ($('#items .po-row').length > 1) {
             $(this).closest('.po-row').remove();
             recalc();

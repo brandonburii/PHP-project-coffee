@@ -536,7 +536,6 @@ include '../_head.php';
     <label class="upload">
         <?= html_file('photo', 'image/*') ?>
         <img src="<?= photo_src($p->photo) ?>">
-        <img src="/photos/<?= photo_url($p->photo) ?>">
     </label>
     <small style="color: #666;">Replace the main image only</small>
     <?= err('photo') ?>

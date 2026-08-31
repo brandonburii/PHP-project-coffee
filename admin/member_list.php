@@ -6,11 +6,11 @@ auth('Admin');
 
 // Get sorting, searching and pagination parameters
 $fields = [
-    'id'    => 'ID',
-    'email' => 'Email',
-    'name'  => 'Name',
-    'role'  => 'Role',
-    'status'=> 'Status',
+    'id'     => 'ID',
+    'email'  => 'Email',
+    'name'   => 'Name',
+    'role'   => 'Role',
+    'active' => 'Status',
 ];
 
 $sort = req('sort', 'id');
@@ -60,7 +60,7 @@ if (req('export')) {
             $m->email,
             $m->name,
             $m->role,
-            $m->status ?? 'Active',
+            (int)$m->active === 0 ? 'Blocked' : 'Active',
             $m->points ?? 0
         ]);
     }
@@ -129,7 +129,6 @@ include '../_head.php';
         <tr>
             <td>
                 <img src="<?= photo_src($m->photo) ?>" style="width: 50px; height: 50px; object-fit: cover; border: 1px solid #ccc; border-radius: 5px;">
-                <img src="/photos/<?= photo_url($m->photo) ?>" style="width: 50px; height: 50px; object-fit: cover; border: 1px solid #ccc; border-radius: 5px;">
             </td>
             <td><?= $m->id ?></td>
             <td><?= encode($m->email) ?></td>
@@ -138,10 +137,8 @@ include '../_head.php';
             
             <!-- Status Badge Display -->
             <td>
-                <?php if ($m->status === 'Blocked'): ?>
+                <?php if ((int)$m->active === 0): ?>
                     <span style="color: #e74c3c; font-weight: bold; background: #fadbd8; padding: 2px 8px; border-radius: 12px; font-size: 0.85em;">Blocked</span>
-                <?php elseif ($m->status === 'Pending'): ?>
-                    <span style="color: #f39c12; font-weight: bold; background: #fdebd0; padding: 2px 8px; border-radius: 12px; font-size: 0.85em;">Pending</span>
                 <?php else: ?>
                     <span style="color: #27ae60; font-weight: bold; background: #d5f5e3; padding: 2px 8px; border-radius: 12px; font-size: 0.85em;">Active</span>
                 <?php endif; ?>

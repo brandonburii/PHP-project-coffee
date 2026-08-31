@@ -308,7 +308,8 @@ CREATE TABLE `user` (
   `role` varchar(100) NOT NULL,
   `points` int(11) NOT NULL DEFAULT 0,
   `active` tinyint(1) NOT NULL DEFAULT 1,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `remember_token` varchar(100) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

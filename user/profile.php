@@ -529,28 +529,6 @@ function profileForm() {
     }
 }
 </script>
-<form method="post" class="form" enctype="multipart/form-data">
-    <label for="email">Email</label>
-    <?= html_text('email', 'maxlength="100"') ?>
-    <?= err('email') ?>
-
-    <label for="name">Name</label>
-    <?= html_text('name', 'maxlength="100"') ?>
-    <?= err('name') ?>
-
-    <label for="photo">Photo</label>
-    <label class="upload">
-        <?= html_file('photo', 'image/*') ?>
-        <img src="<?= photo_src($_user->photo) ?>">
-    </label>
-    <?= err('photo') ?>
-
-    <section>
-        <button>Update</button>
-        <button type="reset">Reset</button>
-        <button type="button" class="secondary" data-get="/user/password.php">Change Password</button>
-    </section>
-</form>
 
 <?php
 include '../_foot.php';
