@@ -1560,6 +1560,38 @@ function ensure_category_table() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
 }
 
+// Optional link: reward row references an existing product (NULL = custom reward)
+function ensure_reward_product_id_column() {
+    global $_db;
+    $col = $_db->query("SHOW COLUMNS FROM reward LIKE 'product_id'")->fetch();
+    if ($col) {
+        return;
+    }
+    $_db->exec('ALTER TABLE reward ADD COLUMN product_id CHAR(4) NULL DEFAULT NULL AFTER id');
+    $_db->exec('ALTER TABLE reward ADD KEY idx_reward_product_id (product_id)');
+    try {
+        $_db->exec('
+            ALTER TABLE reward
+            ADD CONSTRAINT reward_ibfk_product
+            FOREIGN KEY (product_id) REFERENCES product(id)
+            ON DELETE SET NULL ON UPDATE CASCADE
+        ');
+    } catch (Exception $e) {
+        // FK may already exist on some environments
+    }
+}
+
+function reward_is_product_linked($reward) {
+    return is_object($reward)
+        && property_exists($reward, 'product_id')
+        && $reward->product_id !== null
+        && $reward->product_id !== '';
+}
+
+function reward_type_label($reward) {
+    return reward_is_product_linked($reward) ? 'Product-based reward' : 'Custom reward';
+}
+
 function slugify($text) {
     $text = preg_replace('~[^\\pL0-9]+~u', '-', $text);
     $text = iconv('utf-8', 'us-ascii//TRANSLIT', $text);
