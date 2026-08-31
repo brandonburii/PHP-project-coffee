@@ -111,6 +111,9 @@ if (is_post()) {
     if (!$_err) {
         $photo_name = save_photo($photo, '../photos');
 
+        // --------------------------------------------------------------------
+        // INSERT PRODUCT
+        // --------------------------------------------------------------------
         $stm = $_db->prepare('
             INSERT INTO product
                 (id, name, description, origin, roast, tag, price, sale_price, sale_start, sale_end, photo, stock)
@@ -125,6 +128,71 @@ if (is_post()) {
             $sale_end   ? date('Y-m-d H:i:s', strtotime($sale_end))   : null,
             $photo_name, $stock,
         ]);
+
+        // --------------------------------------------------------------------
+        // INSERT PRIMARY IMAGE INTO product_image TABLE
+        // --------------------------------------------------------------------
+        $stm = $_db->prepare('
+            INSERT INTO product_image (product_id, image_path, is_primary, sort_order)
+            VALUES (?, ?, 1, 0)
+        ');
+        $stm->execute([$id, $photo_name]);
+
+        // --------------------------------------------------------------------
+        // HANDLE ADDITIONAL IMAGE UPLOADS
+        // --------------------------------------------------------------------
+        if (isset($_FILES['product_images']) && !empty($_FILES['product_images']['name'][0])) {
+            $upload_dir = '../photos/';
+            $allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+            $max_file_size = 5 * 1024 * 1024; // 5MB
+            
+            $uploaded_files = $_FILES['product_images'];
+            $total_files = count($uploaded_files['name']);
+            
+            for ($i = 0; $i < $total_files; $i++) {
+                $file_name = $uploaded_files['name'][$i];
+                $file_tmp = $uploaded_files['tmp_name'][$i];
+                $file_error = $uploaded_files['error'][$i];
+                $file_type = mime_content_type($file_tmp);
+                $file_size = $uploaded_files['size'][$i];
+                
+                // Skip if upload error
+                if ($file_error !== UPLOAD_ERR_OK) {
+                    continue;
+                }
+                
+                // Validate file type
+                if (!in_array($file_type, $allowed_types)) {
+                    temp('warning', "Skipped '{$file_name}': Only JPG, PNG, WEBP, and GIF allowed");
+                    continue;
+                }
+                
+                // Validate file size
+                if ($file_size > $max_file_size) {
+                    temp('warning', "Skipped '{$file_name}': File too large (max 5MB)");
+                    continue;
+                }
+                
+                // Generate unique filename
+                $ext = pathinfo($file_name, PATHINFO_EXTENSION);
+                $new_filename = 'product_' . $id . '_' . time() . '_' . $i . '.' . $ext;
+                $destination = $upload_dir . $new_filename;
+                
+                // Move file
+                if (move_uploaded_file($file_tmp, $destination)) {
+                    // Insert into database (not primary)
+                    $sort_order = $i + 1;
+                    
+                    $stm = $_db->prepare('
+                        INSERT INTO product_image (product_id, image_path, is_primary, sort_order)
+                        VALUES (?, ?, 0, ?)
+                    ');
+                    $stm->execute([$id, $new_filename, $sort_order]);
+                } else {
+                    temp('warning', "Failed to upload '{$file_name}'");
+                }
+            }
+        }
 
         log_stock($id, 'added', 0, $stock);
 
@@ -145,6 +213,34 @@ $_breadcrumbs = [
 $_title = 'Admin | Create Product';
 include '../_head.php';
 ?>
+
+<style>
+.form .image-upload-area {
+    border: 2px dashed #ddd;
+    padding: 20px;
+    text-align: center;
+    border-radius: 8px;
+    transition: all 0.3s;
+    cursor: pointer;
+    margin-top: 10px;
+}
+.form .image-upload-area:hover {
+    border-color: #007bff;
+    background: #f8f9fa;
+}
+.form .image-upload-area input[type="file"] {
+    display: none;
+}
+.form .image-upload-area .upload-icon {
+    font-size: 36px;
+    color: #6c757d;
+}
+.form .image-upload-area .upload-text {
+    color: #6c757d;
+    margin-top: 5px;
+    font-size: 14px;
+}
+</style>
 
 <form method="post" class="form" enctype="multipart/form-data">
     <label for="id">Product ID</label>
@@ -191,18 +287,85 @@ include '../_head.php';
     <input type="datetime-local" id="sale_end" name="sale_end" value="<?= encode($sale_end ?? '') ?>">
     <?= err('sale_end') ?>
 
-    <label for="photo">Product Image</label>
+    <!-- ================================================================ -->
+    <!-- MAIN PHOTO UPLOAD (Single) -->
+    <!-- ================================================================ -->
+    <label for="photo">Main Product Image</label>
     <label class="upload">
         <?= html_file('photo', 'image/*') ?>
         <img src="/photos/0.jpg">
     </label>
     <?= err('photo') ?>
 
-    <section>
+    <!-- ================================================================ -->
+    <!-- MULTIPLE IMAGE UPLOAD -->
+    <!-- ================================================================ -->
+    <label>Additional Product Images</label>
+    <div class="image-upload-area" id="imageUploadArea">
+        <div class="upload-icon">📷</div>
+        <div class="upload-text">
+            <strong>Click to upload multiple images</strong> or drag and drop<br>
+            <small style="color: #999;">Supported: JPG, PNG, WEBP, GIF (Max 5MB each)</small>
+        </div>
+        <input type="file" name="product_images[]" id="productImages" 
+               multiple accept="image/*">
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- FORM ACTIONS -->
+    <!-- ================================================================ -->
+    <section style="margin-top: 20px;">
         <button>Create Product</button>
         <button type="reset">Reset</button>
+        <a href="product_list.php" class="btn btn-secondary">Cancel</a>
     </section>
 </form>
 
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('imageUploadArea');
+    const fileInput = document.getElementById('productImages');
+    
+    // Click to upload
+    uploadArea.addEventListener('click', function() {
+        fileInput.click();
+    });
+    
+    // Drag and drop
+    uploadArea.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#007bff';
+        this.style.background = '#e3f2fd';
+    });
+    
+    uploadArea.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#ddd';
+        this.style.background = 'transparent';
+    });
+    
+    uploadArea.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.style.borderColor = '#ddd';
+        this.style.background = 'transparent';
+        
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            // Auto-submit to upload
+            this.closest('form').submit();
+        }
+    });
+    
+    // Show file count on selection
+    fileInput.addEventListener('change', function() {
+        if (this.files.length > 0) {
+            const text = this.closest('.image-upload-area').querySelector('.upload-text');
+            text.innerHTML = `<strong>${this.files.length} file(s) selected</strong> - Click "Create Product" to upload`;
+        }
+    });
+});
+</script>
+
 <?php
 include '../_foot.php';
+?>

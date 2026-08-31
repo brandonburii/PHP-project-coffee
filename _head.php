@@ -4,9 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $_title ?? 'Untitled' ?></title>
-    <link rel="shortcut icon" href="/images/favicon.png">
+    <link rel="shortcut icon" href="/images/icon.png">
+    
+    <!-- ============================================
+         EXTERNAL CSS
+         ============================================ -->
+    <!-- Swiper.js CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+    
+    <!-- Your main CSS -->
     <link rel="stylesheet" href="/css/app.css">
+    
+    
+    <!--EXTERNAL JS-->
+    <!-- jQuery -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    
+    <!-- Swiper.js -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    
+    <!-- Your main JS -->
     <script src="/js/app.js"></script>
 </head>
 <body>
@@ -41,6 +58,7 @@
             <?php elseif ($_user?->role == 'Member'): ?>
                 <a href="/" class="<?= is_active('/') ?>"><?= icon('home') ?><span>Home</span></a>
                 <a href="/product/list.php" class="<?= is_active('/product/list.php') ?>"><?= icon('products') ?><span>Products</span></a>
+                <a href="/product/wishlist.php" class="<?= is_active('/product/wishlist.php') ?>"><?= icon('wishlist') ?><span>Wishlist</span></a>
                 <a href="/order/cart.php" class="<?= is_active('/order/cart.php') ?>">
                     <?= icon('cart') ?><span>Shopping Cart</span>
                     <?php
@@ -56,6 +74,7 @@
             <?php else: ?>
                 <a href="/" class="<?= is_active('/') ?>"><?= icon('home') ?><span>Home</span></a>
                 <a href="/product/list.php" class="<?= is_active('/product/list.php') ?>"><?= icon('products') ?><span>Products</span></a>
+                <a href="/product/wishlist.php" class="<?= is_active('/product/wishlist.php') ?>"><?= icon('wishlist') ?><span>Wishlist</span></a>
                 <a href="/order/cart.php" class="<?= is_active('/order/cart.php') ?>">
                     <?= icon('cart') ?><span>Shopping Cart</span>
                     <?php

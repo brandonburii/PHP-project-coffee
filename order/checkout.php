@@ -145,7 +145,11 @@ if (is_post()) {
             $_SESSION['user']->points = $available_points - $points_used + $earned;
 
             set_cart();
+            // Tell order detail page to show the review popup
+            $_SESSION['review_prompt_order'] = $order_id;
+
             temp('info', 'Checkout successful');
+
             redirect("detail.php?id=$order_id");
         }
         catch (Exception $e) {
