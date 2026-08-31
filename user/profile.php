@@ -278,7 +278,9 @@ include '../_head.php';
         <section style="margin-top: 24px; grid-column: 1 / -1;">
             <button type="submit" x-ref="submitBtn" :disabled="Object.keys(errors).length > 0" :style="Object.keys(errors).length > 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''">Update</button>
             <button type="reset" @click="resetForm">Reset</button>
-            <button type="button" class="secondary" data-get="/user/password.php">Change Password</button>
+            
+            <!-- FIX: Use standard onclick and point to a new dedicated file -->
+            <button type="button" class="secondary" onclick="window.location.href='change_password.php'">Change Password</button>
         </section>
     </form>
 </div>

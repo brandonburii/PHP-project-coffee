@@ -69,6 +69,12 @@ include '../_head.php';
 <style>
 [x-cloak] { display: none !important; }
 
+/* Kill the native browser eye icon (Edge/IE) */
+input::-ms-reveal,
+input::-ms-clear {
+    display: none !important;
+}
+
 /* Form container - forces block display to prevent global flex conflicts */
 .auth-form-fixed {
     display: block;
@@ -123,6 +129,7 @@ include '../_head.php';
     box-sizing: border-box;
 }
 
+/* Eye toggle with forced transparency to override global CSS */
 .eye-toggle {
     position: absolute;
     right: 8px;
@@ -131,16 +138,25 @@ include '../_head.php';
     display: flex;
     align-items: center;
     justify-content: center;
-    background: none;
-    border: none;
+    width: 24px;
+    height: 24px;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
     cursor: pointer;
-    padding: 4px;
+    padding: 0;
     color: #888;
     line-height: 0;
+    outline: none !important;
 }
 
-.eye-toggle:hover {
-    color: #333;
+/* Ensure hovering or clicking doesn't trigger global button backgrounds */
+.eye-toggle:hover, 
+.eye-toggle:focus, 
+.eye-toggle:active {
+    background: transparent !important;
+    box-shadow: none !important;
+    outline: none !important;
 }
 
 .generate-btn {
@@ -214,11 +230,17 @@ include '../_head.php';
             <div class="password-field-wrapper">
                 <div class="password-row-inner">
                     <div class="input-with-eye">
-                        <input type="password" name="password" id="password-field" x-model="password" @input="validatePassword(); updateStrengthMeter($event.target.value)" maxlength="20" required placeholder="Min. 6 characters">
-                        <button type="button" class="eye-toggle" id="toggle-password" title="Show/Hide password">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <input :type="showNew ? 'text' : 'password'" name="password" id="password-field" x-model="password" @input="validatePassword(); updateStrengthMeter($event.target.value)" maxlength="20" required placeholder="Min. 6 characters">
+                        <button type="button" class="eye-toggle" tabindex="-1" @click="showNew = !showNew" title="Show/Hide password">
+                            <!-- Eye Open -->
+                            <svg x-show="!showNew" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                 <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <!-- Eye Crossed -->
+                            <svg x-show="showNew" x-cloak viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
                             </svg>
                         </button>
                     </div>
@@ -247,11 +269,17 @@ include '../_head.php';
             <div class="password-field-wrapper">
                 <div class="password-row-inner">
                     <div class="input-with-eye">
-                        <input type="password" name="confirm" id="confirm-field" x-model="confirm" @input="validateConfirm" maxlength="20" required placeholder="Re-enter password">
-                        <button type="button" class="eye-toggle" id="toggle-confirm" title="Show/Hide password">
-                            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <input :type="showConfirm ? 'text' : 'password'" name="confirm" id="confirm-field" x-model="confirm" @input="validateConfirm" maxlength="20" required placeholder="Re-enter password">
+                        <button type="button" class="eye-toggle" tabindex="-1" @click="showConfirm = !showConfirm" title="Show/Hide password">
+                            <!-- Eye Open -->
+                            <svg x-show="!showConfirm" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                 <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                            <!-- Eye Crossed -->
+                            <svg x-show="showConfirm" x-cloak viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                <line x1="1" y1="1" x2="23" y2="23"></line>
                             </svg>
                         </button>
                     </div>
@@ -281,6 +309,8 @@ function resetPasswordForm() {
         confirm: '',
         errors: {},
         passwordGenerated: false,
+        showNew: false,
+        showConfirm: false,
 
         validatePassword() {
             if (this.password === '') {
@@ -364,27 +394,16 @@ function resetPasswordForm() {
             this.validatePassword();
             this.validateConfirm();
             this.updateStrengthMeter(generated);
+            
+            // Automatically reveal the generated password using Alpine state
+            this.showNew = true;
+            this.showConfirm = true;
 
             this.passwordGenerated = true;
             setTimeout(() => { this.passwordGenerated = false; }, 3000);
         }
     }
 }
-
-// Eye toggle logic (plain JS)
-document.addEventListener('DOMContentLoaded', function() {
-    function setupEyeToggle(toggleId, fieldId) {
-        const toggleBtn = document.getElementById(toggleId);
-        const field = document.getElementById(fieldId);
-        if (!toggleBtn || !field) return;
-        toggleBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            field.type = field.type === 'password' ? 'text' : 'password';
-        });
-    }
-    setupEyeToggle('toggle-password', 'password-field');
-    setupEyeToggle('toggle-confirm', 'confirm-field');
-});
 </script>
 
 <?php
