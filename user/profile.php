@@ -249,10 +249,9 @@ include '../_head.php';
                 <span class="err" x-show="errors.photo" x-text="errors.photo" style="display: none; color: red; font-size: 13px;"></span>
             </div>
 
-            <!-- 2. The Tools Panel (Wrapper is ALWAYS visible now) -->
+            <!-- 2. The Tools Panel -->
             <div class="photo-tools">
-                
-                <!-- Editing Tools (Only show when a NEW image is loaded/captured) -->
+                <!-- Editing Tools -->
                 <button type="button" x-show="imagePreview === 'editing'" @click.prevent="rotate(-90)">⟲ Rotate Left</button>
                 <button type="button" x-show="imagePreview === 'editing'" @click.prevent="rotate(90)">⟳ Rotate Right</button>
                 <button type="button" x-show="imagePreview === 'editing'" @click.prevent="flip('h')">⇋ Flip Left/Right</button>
@@ -262,24 +261,21 @@ include '../_head.php';
                 <button type="button" class="primary full-width" x-show="isCameraOpen" @click.prevent="takeSnapshot">📸 Capture Photo</button>
                 <button type="button" class="danger full-width" x-show="isCameraOpen" @click.prevent="stopCamera">Cancel Camera</button>
 
-                <!-- Use Webcam Button: Show when camera is CLOSED. Make it full-width if no editing is happening. -->
+                <!-- Use Webcam Button -->
                 <button type="button" class="primary" :class="{ 'full-width': imagePreview !== 'editing' }" x-show="!isCameraOpen" @click.prevent="startCamera">
                     📷 Use Webcam
                 </button>
 
-                <!-- Cancel New Photo: Show when editing a new photo. -->
+                <!-- Cancel New Photo -->
                 <button type="button" class="danger" x-show="imagePreview === 'editing' && !isCameraOpen" @click.prevent="clearImage">
                     Cancel New Photo
                 </button>
-
             </div>
         </div>
 
         <section style="margin-top: 24px; grid-column: 1 / -1;">
             <button type="submit" x-ref="submitBtn" :disabled="Object.keys(errors).length > 0" :style="Object.keys(errors).length > 0 ? 'opacity: 0.5; cursor: not-allowed;' : ''">Update</button>
             <button type="reset" @click="resetForm">Reset</button>
-            
-            <!-- FIX: Use standard onclick and point to a new dedicated file -->
             <button type="button" class="secondary" onclick="window.location.href='change_password.php'">Change Password</button>
         </section>
     </form>
@@ -416,7 +412,9 @@ function profileForm() {
         },
 
         rotate(deg) {
-            this.rotation = (this.rotation + deg + 360) % 360;
+            // FIX: We subtract the degree instead of adding it. 
+            // This reverses the canvas rotation so "Left" rotates left and "Right" rotates right!
+            this.rotation = (this.rotation - deg + 360) % 360;
             this.drawImage();
         },
 
