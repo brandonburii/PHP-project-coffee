@@ -14,15 +14,21 @@ if (is_post()) {
         $_err['email'] = 'Invalid email';
     }
     else {
-        $stm = $_db->prepare('SELECT * FROM user WHERE email = ?');
+        $stm = $_db->prepare('SELECT ' . user_auth_select_sql() . ' FROM user WHERE email = ?');
         $stm->execute([$email]);
         $u = $stm->fetch();
 
         if (!$u) {
             $_err['email'] = 'Email not found';
         }
-        else if ((int)$u->active == 0) {
-            $_err['email'] = 'Account disabled';
+        else {
+            $active = user_account_active($u);
+            if ($active === null) {
+                $_err['email'] = 'Password reset unavailable. Database update required. Please contact the administrator.';
+            }
+            elseif ($active === false) {
+                $_err['email'] = 'Account disabled';
+            }
         }
     }
 

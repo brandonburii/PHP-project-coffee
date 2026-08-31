@@ -447,6 +447,19 @@ function err($key) {
 // Global user object
 $_user = $_SESSION['user'] ?? null;
 
+// Columns required for login / remember-me (must include active)
+function user_auth_select_sql() {
+    return 'id, email, password, name, photo, role, points, active, created_at, remember_token';
+}
+
+// true = active, false = disabled, null = active property missing (schema/outdated DB)
+function user_account_active($user) {
+    if (!is_object($user) || !property_exists($user, 'active')) {
+        return null;
+    }
+    return (int) $user->active === 1;
+}
+
 // Login user
 function login($user, $url = '/') {
     // Permanent cart: merge guest session cart with saved DB cart (Members only)
@@ -1510,19 +1523,24 @@ if (!isset($_SESSION['user']) && isset($_COOKIE['remember_token'])) {
     if (!$is_locked) {
         $token = $_COOKIE['remember_token'];
         
-        $stm = $_db->prepare('SELECT * FROM user WHERE remember_token = ?');
+        $stm = $_db->prepare('SELECT ' . user_auth_select_sql() . ' FROM user WHERE remember_token = ?');
         $stm->execute([$token]);
         $u = $stm->fetch();
 
         if ($u) {
-            if ((int)$u->active) {
+            $active = user_account_active($u);
+            if ($active === true) {
                 login($u);
                 audit('Auth', 'Remember Me Login', "Automatically logged in using remember token for: {$u->email}");
             } else {
                 setcookie('remember_token', '', time() - 3600, '/');
                 $stm = $_db->prepare('UPDATE user SET remember_token = NULL WHERE id = ?');
                 $stm->execute([$u->id]);
-                audit('Auth', 'Remember Me Revoked', "Revoked remember token for disabled user: {$u->email}");
+                if ($active === false) {
+                    audit('Auth', 'Remember Me Revoked', "Revoked remember token for disabled user: {$u->email}");
+                } else {
+                    error_log('[AUTH] Remember Me blocked: user.active column missing — run module1_admin_management.sql');
+                }
             }
         }
     }

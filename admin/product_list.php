@@ -29,12 +29,29 @@ if ($search != '') {
 }
 $query .= " ORDER BY $sort $dir";
 
-$limit = 5; // Items per page
-$page = req('page', 1);
+$per_page = req('per_page', '10');
+$allowed_per_page = ['10', '20', '50', 'all'];
+if (!in_array($per_page, $allowed_per_page, true)) {
+    $per_page = '10';
+}
 
-require_once '../lib/SimplePager.php';
-$pager = new SimplePager($query, $params, $limit, $page);
-$arr = $pager->result;
+$page = req('page', 1);
+$pager = null;
+
+if ($per_page === 'all') {
+    $stm = $_db->prepare($query);
+    $stm->execute($params);
+    $arr = $stm->fetchAll();
+    $item_count = count($arr);
+}
+else {
+    require_once '../lib/SimplePager.php';
+    $pager = new SimplePager($query, $params, (int) $per_page, $page);
+    $arr = $pager->result;
+    $item_count = $pager->item_count;
+}
+
+$list_params = "sort=$sort&dir=$dir&search=" . urlencode($search) . "&per_page=" . urlencode($per_page);
 
 $_breadcrumbs = [
     'Dashboard' => '/',
@@ -51,10 +68,17 @@ include '../_head.php';
 <form method="get" class="search-form">
     <label for="search">Search:</label>
     <?= html_search('search', 'placeholder="Search name or description"') ?>
+    <label for="per_page">Items per page:</label>
+    <select name="per_page" id="per_page">
+        <option value="10" <?= $per_page === '10' ? 'selected' : '' ?>>10</option>
+        <option value="20" <?= $per_page === '20' ? 'selected' : '' ?>>20</option>
+        <option value="50" <?= $per_page === '50' ? 'selected' : '' ?>>50</option>
+        <option value="all" <?= $per_page === 'all' ? 'selected' : '' ?>>All</option>
+    </select>
     <button>Search</button>
 </form>
 
-<p><?= $pager->item_count ?> record(s) found.</p>
+<p><?= $item_count ?> record(s) found.</p>
 
 <?php if (empty($arr)): ?>
     <div class="empty-state">
@@ -67,7 +91,7 @@ include '../_head.php';
     <thead>
         <tr>
             <th>Image</th>
-            <?php table_headers($fields, $sort, $dir, "search=" . urlencode($search)); ?>
+            <?php table_headers($fields, $sort, $dir, $list_params); ?>
             <th>Description</th>
             <th>Actions</th>
         </tr>
@@ -94,7 +118,9 @@ include '../_head.php';
 <?php endif; ?>
 
 <br>
-<?php $pager->html("sort=$sort&dir=$dir&search=" . urlencode($search)); ?>
+<?php if ($pager): ?>
+<?php $pager->html($list_params); ?>
+<?php endif; ?>
 
 <?php
 include '../_foot.php';

@@ -139,65 +139,42 @@ if (is_post()) {
         ]);
 
         // --------------------------------------------------------------------
-        // INSERT PRIMARY IMAGE INTO product_image TABLE
-        // --------------------------------------------------------------------
-        $stm = $_db->prepare('
-            INSERT INTO product_image (product_id, image_path, is_primary, sort_order)
-            VALUES (?, ?, 1, 0)
-        ');
-        $stm->execute([$id, $photo_name]);
-
-        // --------------------------------------------------------------------
-        // HANDLE ADDITIONAL IMAGE UPLOADS
+        // HANDLE ADDITIONAL IMAGE UPLOADS (products/ folder)
         // --------------------------------------------------------------------
         if (isset($_FILES['product_images']) && !empty($_FILES['product_images']['name'][0])) {
-            $upload_dir = '../photos/';
+            $upload_dir = '../products/';
             $allowed_types = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
             $max_file_size = 5 * 1024 * 1024; // 5MB
-            
+
             $uploaded_files = $_FILES['product_images'];
             $total_files = count($uploaded_files['name']);
-            
+
             for ($i = 0; $i < $total_files; $i++) {
                 $file_name = $uploaded_files['name'][$i];
                 $file_tmp = $uploaded_files['tmp_name'][$i];
                 $file_error = $uploaded_files['error'][$i];
                 $file_type = mime_content_type($file_tmp);
                 $file_size = $uploaded_files['size'][$i];
-                
-                // Skip if upload error
+
                 if ($file_error !== UPLOAD_ERR_OK) {
                     continue;
                 }
-                
-                // Validate file type
+
                 if (!in_array($file_type, $allowed_types)) {
                     temp('warning', "Skipped '{$file_name}': Only JPG, PNG, WEBP, and GIF allowed");
                     continue;
                 }
-                
-                // Validate file size
+
                 if ($file_size > $max_file_size) {
                     temp('warning', "Skipped '{$file_name}': File too large (max 5MB)");
                     continue;
                 }
-                
-                // Generate unique filename
+
                 $ext = pathinfo($file_name, PATHINFO_EXTENSION);
-                $new_filename = 'product_' . $id . '_' . time() . '_' . $i . '.' . $ext;
+                $new_filename = $name . '_' . uniqid('', true) . '.' . $ext;
                 $destination = $upload_dir . $new_filename;
-                
-                // Move file
-                if (move_uploaded_file($file_tmp, $destination)) {
-                    // Insert into database (not primary)
-                    $sort_order = $i + 1;
-                    
-                    $stm = $_db->prepare('
-                        INSERT INTO product_image (product_id, image_path, is_primary, sort_order)
-                        VALUES (?, ?, 0, ?)
-                    ');
-                    $stm->execute([$id, $new_filename, $sort_order]);
-                } else {
+
+                if (!move_uploaded_file($file_tmp, $destination)) {
                     temp('warning', "Failed to upload '{$file_name}'");
                 }
             }

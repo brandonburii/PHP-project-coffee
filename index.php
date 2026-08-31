@@ -42,7 +42,9 @@ if ($_user) {
         $low_reward_stock = [];
 
         try {
-            $rewards_redeemed = (int) $_db->query("SELECT COUNT(*) FROM reward_redemption")->fetchColumn();
+            $rewards_redeemed = (int) $_db->query("
+                SELECT COUNT(*) FROM reward_redemption WHERE status = 'completed'
+            ")->fetchColumn();
             $points_issued    = (int) $_db->query("SELECT COALESCE(SUM(points_earned),0) FROM `order`")->fetchColumn();
             $active_vouchers  = (int) $_db->query("
                 SELECT COUNT(*) FROM voucher
@@ -52,11 +54,12 @@ if ($_user) {
             ")->fetchColumn();
 
             $most_redeemed = $_db->query("
-                SELECT r.name, COUNT(*) AS times
+                SELECT r.id, r.name, COUNT(*) AS times
                 FROM reward_redemption rr
-                JOIN reward r ON r.id = rr.reward_id
-                GROUP BY rr.reward_id
-                ORDER BY times DESC
+                INNER JOIN reward r ON r.id = rr.reward_id
+                WHERE rr.status = 'completed'
+                GROUP BY r.id, r.name
+                ORDER BY times DESC, r.sort_order ASC, r.id ASC
                 LIMIT 1
             ")->fetch();
 
@@ -315,9 +318,11 @@ include '_head.php';
         </div>
         <div class="stat-card loyalty-stat">
             <h3>🏆 Top Reward</h3>
-            <p style="font-size:1.05rem;"><?= $most_redeemed ? encode($most_redeemed->name) : '—' ?></p>
-            <?php if ($most_redeemed): ?>
+            <?php if ($most_redeemed && (int) $most_redeemed->times > 0): ?>
+                <p style="font-size:1.05rem;"><?= encode($most_redeemed->name) ?></p>
                 <small><?= (int) $most_redeemed->times ?> redemptions</small>
+            <?php else: ?>
+                <p style="font-size:1.05rem;">No redemptions yet</p>
             <?php endif ?>
         </div>
     </div>

@@ -54,15 +54,20 @@ if (is_post()) {
         // Login user
         if (!$_err) {
             $stm = $_db->prepare('
-                SELECT * FROM user
+                SELECT ' . user_auth_select_sql() . '
+                FROM user
                 WHERE email = ? AND password = SHA1(?)
             ');
             $stm->execute([$email, $password]);
             $u = $stm->fetch();
 
             if ($u) {
-                // Verify account active status before allowing login
-                if ((int)$u->active == 0) {
+                $active = user_account_active($u);
+                if ($active === null) {
+                    error_log('[AUTH] Login blocked: user.active column missing — run module1_admin_management.sql');
+                    $_err['password'] = 'Login unavailable. Database update required. Please contact the administrator.';
+                }
+                elseif ($active === false) {
                     $_err['password'] = 'Account disabled';
                     audit('Auth', 'Failed Login', "Attempted to log in to disabled account: $email");
                     
