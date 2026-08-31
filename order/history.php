@@ -244,7 +244,7 @@ include '../_head.php';
                 $img = photo_url($photo);
                 $imgFolder = is_file(__DIR__ . '/../products/' . $img) ? '/products/' : '/photos/';
             ?>
-                <img src="<?= $imgFolder . rawurlencode($img) ?>" style="width:40px; height:40px; border:1px solid #ccc; vertical-align:middle; margin-left:5px;">
+                <img src="<?= $imgFolder . rawurlencode($img) ?>" style="width:80px; height:80px; border:1px solid #ccc; vertical-align:middle; margin-left:5px;">
             <?php endforeach ?>
         </td>
     </tr>

@@ -44,9 +44,8 @@ $event = json_decode($raw);
 if (isset($event->type) && $event->type === 'checkout.session.completed') {
     $session = $event->data->object;
     $pending_id = $session->metadata->pending_id ?? null;
-    if ($pending_id) {
-        $pending_file = __DIR__ . "/pending_" . basename($pending_id) . ".json";
-        if (file_exists($pending_file)) {
+    $pending_file = pending_order_path($pending_id);
+    if ($pending_file && file_exists($pending_file)) {
             $data = json_decode(file_get_contents($pending_file), true);
             if (!empty($data) && empty($data['processed'])) {
                 // Finalize order (same logic as checkout_success.php)
@@ -58,7 +57,11 @@ if (isset($event->type) && $event->type === 'checkout.session.completed') {
                     $discount = $data['discount'];
                     $total = $data['total'];
 
-                    $stm = $_db->prepare('\n                        INSERT INTO `order`\n                            (datetime, count, subtotal, discount, total, points_earned, points_used, voucher_code, user_id)\n                        VALUES (NOW(), 0, 0, 0, 0, 0, 0, ?, ?)\n                    ');
+                    $stm = $_db->prepare('
+                        INSERT INTO `order`
+                            (datetime, count, subtotal, discount, total, points_earned, points_used, voucher_code, user_id)
+                        VALUES (NOW(), 0, 0, 0, 0, 0, 0, ?, ?)
+                    ');
                     $stm->execute([$vcode, $data['user_id']]);
                     $order_id = $_db->lastInsertId();
 
@@ -82,7 +85,11 @@ if (isset($event->type) && $event->type === 'checkout.session.completed') {
                     }
 
                     $earned = points_earned($total);
-                    $stm_update = $_db->prepare('\n                        UPDATE `order`\n                        SET count = ?, subtotal = ?, discount = ?, total = ?, points_earned = ?, points_used = ?\n                        WHERE id = ?\n                    ');
+                    $stm_update = $_db->prepare('
+                        UPDATE `order`
+                        SET count = ?, subtotal = ?, discount = ?, total = ?, points_earned = ?, points_used = ?
+                        WHERE id = ?
+                    ');
                     $stm_update->execute([$chk_count, $subtotal, $discount, $total, $earned, $points_used, $order_id]);
 
                     $stm_points = $_db->prepare('UPDATE user SET points = points - ? + ? WHERE id = ?');
@@ -91,9 +98,8 @@ if (isset($event->type) && $event->type === 'checkout.session.completed') {
                     if ($vcode) voucher_use($vcode);
 
                     $_db->commit();
-                    // mark processed
-                    $data['processed'] = time();
-                    file_put_contents($pending_file, json_encode($data));
+                    // Idempotency: duplicate events find no pending file after first success.
+                    delete_pending_order_file($pending_id);
                     http_response_code(200);
                     echo 'ok';
                     exit;
@@ -105,7 +111,6 @@ if (isset($event->type) && $event->type === 'checkout.session.completed') {
                     exit;
                 }
             }
-        }
     }
 }
 

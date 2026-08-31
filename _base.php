@@ -738,6 +738,52 @@ function get_user_points($user_id = null) {
 }
 
 // ============================================================================
+// Stripe Pending Checkout Files
+// ============================================================================
+
+// Safe path for order/pending_<id>.json (24-char hex id from bin2hex(random_bytes(12)))
+function pending_order_path($pending_id) {
+    if (!is_string($pending_id) || !preg_match('/^[a-f0-9]{24}$/', $pending_id)) {
+        return null;
+    }
+    return __DIR__ . '/order/pending_' . $pending_id . '.json';
+}
+
+// Remove one pending checkout file if present (no error if already deleted)
+function delete_pending_order_file($pending_id) {
+    $path = pending_order_path($pending_id);
+    if ($path && is_file($path)) {
+        @unlink($path);
+    }
+}
+
+// Delete abandoned pending_*.json files older than TTL (minimum 24 hours)
+function cleanup_stale_pending_order_files($ttl_seconds = 86400) {
+    $ttl_seconds = max(86400, (int) $ttl_seconds);
+    $now = time();
+
+    foreach (glob(__DIR__ . '/order/pending_*.json') ?: [] as $file) {
+        $age = null;
+        $raw = @file_get_contents($file);
+        if ($raw !== false && $raw !== '') {
+            $data = json_decode($raw, true);
+            if (isset($data['created']) && is_numeric($data['created'])) {
+                $age = $now - (int) $data['created'];
+            }
+        }
+        if ($age === null) {
+            $mtime = @filemtime($file);
+            if ($mtime) {
+                $age = $now - $mtime;
+            }
+        }
+        if ($age !== null && $age > $ttl_seconds) {
+            @unlink($file);
+        }
+    }
+}
+
+// ============================================================================
 // Vouchers
 // ============================================================================
 
